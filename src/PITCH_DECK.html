@@ -224,21 +224,23 @@
     position: relative;
   }
   .cover .logo {
-    font-size: clamp(4rem, 11.5vw, 9rem);
-    font-weight: 900; letter-spacing: -0.045em; line-height: 1;
-    color: var(--fg);
-    margin-bottom: 0.18em;
-    filter: drop-shadow(0 0 30px rgba(120, 196, 164, 0.18));
+    font-size: clamp(0.9rem, 1.4vw, 1.15rem);
+    font-weight: 600; letter-spacing: 0.18em; line-height: 1;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 1.4em;
+    opacity: 0.9;
   }
   .cover .logo::after {
-    content: ".";
-    color: var(--accent);
+    content: none;
   }
   .cover .tagline {
     color: var(--fg);
-    font-size: clamp(1.2rem, 2.2vw, 1.7rem);
-    font-weight: 400; letter-spacing: -0.01em;
-    margin-bottom: 0.7em;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3.8vw, 3.2rem);
+    font-weight: 700; letter-spacing: -0.025em; line-height: 1.15;
+    margin-bottom: 0.9em;
+    max-width: 18ch; margin-left: auto; margin-right: auto;
   }
   .cover p { max-width: 38em; margin: 0 auto; }
   .cover .meta {
@@ -1160,7 +1162,7 @@
 <section class="slide active cover">
   <div>
     <div class="logo">Periodica</div>
-    <div class="tagline">The on-device DRM standard for AI models. Cross-vendor, auditable, shipping.</div>
+    <div class="tagline">There is no safe way to sell a local AI model. Until now.</div>
     <p style="max-width: 48em; margin: 0 auto;">
       One platform — encoder, license server, audit pipeline, marketplace.
       Weights encrypted at rest, watermarked per-license, revocable from
@@ -1180,35 +1182,39 @@
 <!-- 2. PROBLEM -->
 <section class="slide">
   <div class="label">02 · PROBLEM</div>
-  <h1>Model teams are <span class="accent">locked out</span>. Model creators are <span class="accent">locked in</span>.</h1>
-  <p>The AI infrastructure stack has two exits. Neither works.</p>
+  <h1>The creator can't <span class="accent">sell</span> it. The enterprise can't <span class="accent">trust</span> it. Same reason.</h1>
+  <p>Frontier models dominate because no team can justify training at that scale — even Apple pays Google, OpenAI, or Anthropic. Local models are the answer: full ownership, end-to-end security, deep fine-tuning specialization. But distributing local model weights is broken the same way for both sides of the market.</p>
 
   <div class="cols">
     <div class="col">
-      <div class="col-num">01 · THE API CAGE</div>
-      <h3>Frontier models rule — and extract rent for it</h3>
-      <p>No enterprise team, including teams at Apple, can justify training frontier-scale models from scratch. They pay Google, OpenAI, or Anthropic instead. That's a rational choice — until you look at what you actually bought.</p>
-      <p class="micro mt-md">An API subscription gives you a rate-limited endpoint and a prompt box. Your capabilities are permanently capped at whatever the model vendor decides to expose. <strong>No fine-tuning on your data. No edge or offline deployment. No data ownership. No IP.</strong> You are not a customer — you are a monthly lease.</p>
-    </div>
-    <div class="col">
-      <div class="col-num">02 · THE LOCAL PROMISE — AND ITS TRAP</div>
-      <h3>Local models solve the cage. They create three new problems.</h3>
-      <p>Full ownership. End-to-end security. Deep specialization via fine-tuning. Local models offer everything an API cannot. But distributing them is structurally broken.</p>
+      <div class="col-num">01 · THE CREATOR</div>
+      <h3>Six months of fine-tuning. Zero ways to sell it.</h3>
+      <p>You've trained a specialized model on proprietary data. You want to monetize it. Your options collapse to two:</p>
       <ul class="bullet mt-md">
-        <li><strong>Litigation sales cycles.</strong> Every deal requires months of calls negotiating licensing, privacy, and IP ownership before a contract is signed. There is no self-serve.</li>
-        <li><strong>Two broken exits.</strong> Hide it behind an API — same limitations as frontier. Post it free on HuggingFace — pirated within hours, zero revenue, zero attribution.</li>
-        <li><strong>No middle path.</strong> You cannot sell a local model the way you sell software. The mechanism does not exist.</li>
+        <li><strong>Hide it behind an API.</strong> You operate the infra. Buyers get a prompt box — no local deployment, no offline, no fine-tuning on their data. Same limitations as the frontier models they're already paying for, now at your cost.</li>
+        <li><strong>Post it free on HuggingFace.</strong> Pirated within hours. Zero revenue, zero attribution — and your training corpus is now publicly recoverable from the weights.</li>
       </ul>
+      <p class="micro mt-md">Every commercial deal that avoids these two exits requires months of litigation-heavy sales calls negotiating licensing, privacy, and IP before a contract exists. <strong>There is no self-serve. There is no App Store. The market for selling a local model does not function.</strong></p>
     </div>
     <div class="col">
-      <div class="col-num">03 · WEIGHTS ARE THE DATA</div>
-      <h3>Distributing weights means distributing your training set</h3>
-      <p>Model weights are not a binary blob. They are the training corpus compressed into parameters. Anyone with the full weights can reverse-engineer them to surface PII, proprietary documents, customer conversations, and trade secrets baked into fine-tunes.</p>
-      <p class="micro mt-md"><strong>You cannot sell a local model without cryptographic licensing, per-device binding, and active piracy monitoring.</strong> And even before security — you cannot afford to distribute at scale. Hosting and transferring model weights builds egress bills in the millions. HuggingFace absorbs this cost today as a subsidy. No sustainable business model exists for paid local distribution.</p>
+      <div class="col-num">02 · THE ENTERPRISE</div>
+      <h3>Local AI is the requirement. Nothing on the market is safe to deploy.</h3>
+      <p>Auto OEMs, medical devices, smartphones, AR headsets — these products need on-device AI. Frontier API models are a non-starter: data leaves the network, the vendor controls capability, offline is impossible.</p>
+      <ul class="bullet mt-md">
+        <li><strong>Open weights on-device.</strong> Weights at rest on a device you ship are weights you've surrendered. Anyone who gets the device gets the model — and anyone who gets the model gets the training data baked into it.</li>
+        <li><strong>Roll your own DRM.</strong> No cross-vendor standard exists. Years of per-platform engineering, with no guarantee regulators accept the result.</li>
+      </ul>
+      <p class="micro mt-md">UNECE WP.29, EU AI Act, FDA high-risk AI — regulators are requiring model provenance the same way they require supply-chain provenance. <strong>The compliance infrastructure doesn't exist yet. Neither does the security standard.</strong></p>
+    </div>
+    <div class="col">
+      <div class="col-num">03 · THE ROOT CAUSE</div>
+      <h3>Weights that leave your server unprotected are weights you've lost.</h3>
+      <p>Model weights are not a binary blob. They are the training corpus compressed into parameters. Carlini et al. (2021) extracted memorized PII and full training samples from GPT-2 by querying the model. Fine-tunes inherit proprietary documents, customer chats, and internal codebases directly into the weight space — <strong>the richer the model, the worse the breach.</strong></p>
+      <p class="micro mt-md">The creator loses IP and revenue. The enterprise inherits a data breach in every device it ships. Both are blocked by the same missing primitive: <strong>a way to hand someone model weights without handing them the rights to those weights.</strong> That primitive does not exist. Distribution economics compound the problem — hosting and transferring weights at scale builds egress bills in the millions. HuggingFace absorbs this as a subsidy. No paid model can.</p>
     </div>
   </div>
 
-  <p class="micro mt-md"><strong>The gap.</strong> The AI stack needs a third path: sell local models the way software is sold — with cryptographic protection on every device, per-license watermarks, server-side revocation, and distribution economics that don't require a nine-figure balance sheet. <strong>That path does not exist. That is the market.</strong></p>
+  <p class="micro mt-md"><strong>One gap. Both markets.</strong> You cannot distribute model weights to a device you don't control while retaining cryptographic rights to them. That single missing capability is why creators cannot build a business selling local models, and why enterprises cannot safely deploy them. <strong>Same problem. One solution.</strong></p>
 </section>
 
 <!-- 3. SECURITY PREMISE — open weights are a data breach -->
@@ -1241,22 +1247,23 @@
 <!-- 4. SOLUTION -->
 <section class="slide">
   <div class="label">04 · SOLUTION</div>
-  <h1>Periodica is the <span class="accent">third option</span>.</h1>
+  <h1>One answer for <span class="accent">both sides</span> of the market.</h1>
+  <p>Because the creator's distribution problem and the enterprise's security problem share the same root cause, they share the same solution: <strong>encrypted, watermarked, revocable weights — distributed to any device — with cryptographic rights that stay with the issuer.</strong> That is Periodica. Sell a model the way Apple sells an app. Deploy it the way regulators require.</p>
   <div class="two-cols">
     <div>
       <h3>For creators</h3>
       <ul class="bullet">
-        <li><strong>DRM that actually works.</strong> Models distributed encrypted; license keys revoke on cancellation. Per-customer watermarking traces every leak.</li>
-        <li><strong>Marketplace billing.</strong> Subscriptions, one-off purchases, revenue share. Stripe handles the boring parts.</li>
-        <li><strong>Verified namespace.</strong> Brand protection from day 1; impersonators blocked.</li>
+        <li><strong>DRM that actually works.</strong> Models distributed encrypted; license keys revoke on cancellation. Per-customer watermarking traces every leak back to the licensee.</li>
+        <li><strong>Self-serve marketplace billing.</strong> Subscriptions, one-off purchases, revenue share — no sales call required. Stripe handles the transaction layer.</li>
+        <li><strong>Verified namespace.</strong> Brand protection from day one; impersonators blocked at the registry level.</li>
       </ul>
     </div>
     <div>
-      <h3>For buyers and enterprises</h3>
+      <h3>For enterprises and OEMs</h3>
       <ul class="bullet">
-        <li><strong>Curated catalog.</strong> Audited at L1 by default; behavioral + provenance audits at higher tiers.</li>
-        <li><strong>Knowledge maps.</strong> Capability radar, fine-tune delta, lineage graph for every audited model.</li>
-        <li><strong>Fleet deploy + BYOK.</strong> Auto OEMs, AR/VR, phones, IoT — encrypted weights at rest, per-device key binding, server-side revocation. Drop-in SDK Integration in the enterprise tier.</li>
+        <li><strong>Encrypted fleet deployment.</strong> Weights at rest on every device, per-device key binding, server-side revocation that actually revokes. Cars, phones, AR headsets, medical devices — cross-vendor, one SDK.</li>
+        <li><strong>Audit pipeline + provenance.</strong> Four-tier audit: L1 auto-scan through L4 Periodica Certified. Regulatory-grade lineage, capability radar, fine-tune delta.</li>
+        <li><strong>BYOK + on-prem license server.</strong> Data never leaves the enterprise network. Meets UNECE WP.29, EU AI Act, FDA high-risk AI requirements by construction.</li>
       </ul>
     </div>
   </div>
@@ -1319,7 +1326,7 @@
 
 <!-- 6. GTM OVERVIEW — Three tracks at a glance -->
 <section class="slide dense">
-  <div class="label">07 · GTM / OVERVIEW</div>
+  <div class="label">06 · GTM / OVERVIEW</div>
   <h2>Marketplace first. The catalog is what closes the enterprise deals later.</h2>
   <p>Auto OEMs and medical-device makers don't buy from invisible vendors — they buy from companies with visible models, public audit reports, and community trust signals. The marketplace is how we earn that visibility. The enterprise deals are how the company gets paid.</p>
 
@@ -1399,7 +1406,7 @@
 
 <!-- 10. OUR CUSTOMER / THE EDGE FLEET -->
 <section class="slide dense">
-  <div class="label">11 · OUR_CUSTOMER / THE_EDGE_FLEET</div>
+  <div class="label">07 · OUR_CUSTOMER / THE_EDGE_FLEET</div>
   <h2>Where the deals actually land.</h2>
   <p>Reference targets across the four major device classes. Each row represents an enterprise sales motion at $200k–$2M/yr ACV, gated by a real regulatory deadline.</p>
 
@@ -1438,7 +1445,7 @@
 
 <!-- 15. REGULATORY FORCING FUNCTIONS -->
 <section class="slide dense">
-  <div class="label">16 · REGULATORY / FORCING_FUNCTIONS</div>
+  <div class="label">08 · REGULATORY / FORCING_FUNCTIONS</div>
   <h2>The buyer can't say no.</h2>
   <p>Four mandatory frameworks active or imminent in 2026. Procurement language in regulated verticals already requires documented model provenance.</p>
 
@@ -1474,7 +1481,7 @@
 
 <!-- 11. BUSINESS MODEL — pricing primitives -->
 <section class="slide dense">
-  <div class="label">12 · BUSINESS_MODEL</div>
+  <div class="label">09 · BUSINESS_MODEL</div>
   <h2>How we charge.</h2>
   <p>Hybrid infrastructure model. Pure per-device gets rejected by procurement; flat SaaS hides our marginal cost. The hybrid model scales with the fleet.</p>
 
@@ -1502,7 +1509,7 @@
 
 <!-- 12. VALIDATION GATES — replaces the speculative revenue projection -->
 <section class="slide dense">
-  <div class="label">13 · DISQUALIFIERS</div>
+  <div class="label">10 · DISQUALIFIERS</div>
   <h2>What kills the company.</h2>
   <p>Four gates. Each one specific. Each one disqualifying. We'd rather know early.</p>
 
@@ -1534,7 +1541,7 @@
 
 <!-- 13. LANDSCAPE — five threat-model silos -->
 <section class="slide dense">
-  <div class="label">14 · LANDSCAPE / FIVE_SILOS</div>
+  <div class="label">11 · LANDSCAPE / FIVE_SILOS</div>
   <h2>The market splits cleanly into five threat-model silos.</h2>
   <p>Periodica is alone in silo five. Each row is real, shipping, well-funded — solving a different problem.</p>
 
@@ -1608,7 +1615,7 @@
 
 <!-- 14. VENDORS ADMIT THE GAP — direct quotes from NVIDIA + Intel docs -->
 <section class="slide dense">
-  <div class="label">15 · COMPETITORS_ADMIT / VERBATIM</div>
+  <div class="label">12 · COMPETITORS_ADMIT / VERBATIM</div>
   <h2>The two vendors closest to our lane publicly punt the problem.</h2>
   <p>Verbatim from their own product documentation in 2025–2026. Not interpreted, not paraphrased.</p>
 
@@ -1631,7 +1638,7 @@
 
 <!-- 16. LANDSCAPE COMPARISON — Periodica vs alternatives, in one table -->
 <section class="slide dense">
-  <div class="label">17 · LANDSCAPE / COMPARISON</div>
+  <div class="label">13 · LANDSCAPE / COMPARISON</div>
   <h2>Periodica is the only row with all five capabilities.</h2>
   <p>Every existing tool covers one or two columns. None integrates compression + at-rest encryption + per-license watermarking + cross-vendor decoding into a single shipping artifact.</p>
 
@@ -1721,7 +1728,7 @@
 
 <!-- 17. TRACTION — validation checklist -->
 <section class="slide dense">
-  <div class="label">18 · TRACTION / SHIPPED</div>
+  <div class="label">14 · TRACTION / SHIPPED</div>
   <span class="cont-marker">Continued from previous slide</span>
   <h2>8 B params on HuggingFace, decrypts in 0.15 s warm. Already runs.</h2>
 
@@ -1766,7 +1773,7 @@
 
 <!-- 18. ROADMAP / TIMELINE -->
 <section class="slide">
-  <div class="label">19 · ROADMAP</div>
+  <div class="label">15 · ROADMAP</div>
   <h2>What we ship, in order.</h2>
   <div class="timeline">
     <div class="tl-cell">
@@ -1800,7 +1807,7 @@
 
 <!-- 19. TEAM -->
 <section class="slide">
-  <div class="label">20 · TEAM</div>
+  <div class="label">16 · TEAM</div>
   <h2>Three founders. Each one covers a specific risk.</h2>
   <div class="cols">
     <div class="col">
@@ -1835,7 +1842,7 @@
 
 <!-- 20. ASK -->
 <section class="slide">
-  <div class="label">21 · ASK</div>
+  <div class="label">17 · ASK</div>
   <h2>$500k–$1.5M seed for 18 months runway.</h2>
   <div class="two-cols">
     <div>
