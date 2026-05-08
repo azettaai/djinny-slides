@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Periodica — Client Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:           #070a08;
+      --bg-elev:      #0c110d;
+      --fg:           #d4ddd6;
+      --fg-dim:       #8a9e8e;
+      --accent:       #78c4a4;
+      --danger:       #c46478;
+      --line:         rgba(120, 196, 164, 0.18);
+      --font-mono:    "IBM Plex Mono", "Courier New", monospace;
+      --font-display: "Chakra Petch", system-ui, sans-serif;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-mono);
+    }
+    #root { height: 100%; }
+
+    /* portrait-mobile: prompt user to rotate */
+    .rotate-hint {
+      display: none;
+      position: fixed; inset: 0; z-index: 10000;
+      background: #070a08;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.5rem; padding: 2rem; text-align: center;
+    }
+    @media (orientation: portrait) and (max-width: 768px) {
+      .rotate-hint { display: flex; }
+    }
+    .rotate-hint__phone {
+      width: 52px; height: 52px;
+      animation: rh-tilt 2.8s ease-in-out infinite;
+    }
+    @keyframes rh-tilt {
+      0%, 20%  { transform: rotate(0deg); }
+      55%, 80% { transform: rotate(-90deg); }
+      100%     { transform: rotate(0deg); }
+    }
+    .rotate-hint__label {
+      font-family: "IBM Plex Mono", "Courier New", monospace;
+      font-size: 0.75rem; color: #8a9e8e;
+      max-width: 180px; line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="rotate-hint" role="status" aria-live="polite">
+    <svg class="rotate-hint__phone" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="14" y="4" width="24" height="40" rx="4" stroke="#78c4a4" stroke-width="2"/>
+      <line x1="14" y1="10" x2="38" y2="10" stroke="#78c4a4" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="26" cy="40" r="2" fill="#78c4a4"/>
+    </svg>
+    <p class="rotate-hint__label">Rotate your device to landscape view</p>
+  </div>
+  <div id="root"></div>
+
+  <!-- AES-256-GCM + PBKDF2-SHA256 decryption via Web Crypto API -->
+  <script>
+    async function decryptDeck(enc, password) {
+      const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+      const km  = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
+      );
+      const key = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: b64(enc.salt), iterations: 100000, hash: 'SHA-256' },
+        km,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+      const plain = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: b64(enc.iv) },
+        key,
+        b64(enc.ciphertext)
+      );
+      return new TextDecoder().decode(plain);
+    }
+  </script>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    /* ── shared inline styles matching deck palette ─────────────────── */
+    const css = {
+      wrap: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '2rem',
+        background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(120,196,164,0.05) 0%, transparent 70%)',
+      },
+      card: {
+        width: '100%',
+        maxWidth: '400px',
+        background: '#0c110d',
+        border: '1px solid rgba(120,196,164,0.18)',
+        borderRadius: '0.5rem',
+        padding: '2.5rem 2rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.25rem',
+        boxShadow: '0 24px 60px -22px rgba(0,0,0,0.75)',
+      },
+      eyebrow: {
+        fontFamily: '"Chakra Petch", sans-serif',
+        fontSize: '0.65rem',
+        letterSpacing: '0.2em',
+        color: '#78c4a4',
+        textTransform: 'uppercase',
+      },
+      title: {
+        fontFamily: '"Chakra Petch", sans-serif',
+        fontSize: '1.25rem',
+        fontWeight: 600,
+        color: '#d4ddd6',
+        marginBottom: '0.25rem',
+      },
+      sub: {
+        fontSize: '0.78rem',
+        color: '#8a9e8e',
+        lineHeight: 1.5,
+      },
+      inputBase: {
+        width: '100%',
+        background: '#070a08',
+        borderRadius: '0.35rem',
+        padding: '0.75rem 1rem',
+        color: '#d4ddd6',
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: '0.9rem',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+      },
+      btn: {
+        background: 'rgba(120,196,164,0.1)',
+        border: '1px solid rgba(120,196,164,0.35)',
+        borderRadius: '0.35rem',
+        color: '#78c4a4',
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: '0.85rem',
+        padding: '0.75rem 1.5rem',
+        cursor: 'pointer',
+        letterSpacing: '0.04em',
+        transition: 'background 0.2s, opacity 0.2s',
+      },
+      btnDisabled: {
+        opacity: 0.4,
+        cursor: 'not-allowed',
+      },
+      err: {
+        fontSize: '0.78rem',
+        color: '#c46478',
+        marginTop: '-0.5rem',
+      },
+      divider: {
+        borderTop: '1px solid rgba(120,196,164,0.1)',
+        margin: '0.25rem 0',
+      },
+      backLink: {
+        fontSize: '0.75rem',
+        color: '#556055',
+        textDecoration: 'none',
+        textAlign: 'center',
+      },
+    };
+
+    function PasswordGate({ deckLabel, encFile }) {
+      const [pw,    setPw]    = useState('');
+      const [phase, setPhase] = useState('idle'); // idle | busy | err
+      const inputRef = useRef(null);
+
+      useEffect(() => { inputRef.current?.focus(); }, []);
+
+      async function unlock() {
+        if (!pw || phase === 'busy') return;
+        setPhase('busy');
+        try {
+          const res = await fetch(encFile);
+          if (!res.ok) throw new Error(`fetch ${res.status}`);
+          const enc  = await res.json();
+          const html = await decryptDeck(enc, pw);
+          document.open();
+          document.write(html);
+          document.close();
+        } catch {
+          setPhase('err');
+          setTimeout(() => { setPhase('idle'); }, 2500);
+        }
+      }
+
+      const isBusy    = phase === 'busy';
+      const isErr     = phase === 'err';
+      const canSubmit = pw.length > 0 && !isBusy;
+
+      return (
+        <div style={css.wrap}>
+          <div style={css.card}>
+            <span style={css.eyebrow}>Periodica</span>
+
+            <div>
+              <h1 style={css.title}>{deckLabel}</h1>
+              <p style={css.sub}>Enter your access key to decrypt and view this deck.</p>
+            </div>
+
+            <div style={css.divider} />
+
+            <input
+              ref={inputRef}
+              type="password"
+              value={pw}
+              autoComplete="current-password"
+              placeholder="access key"
+              onChange={e => setPw(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && unlock()}
+              style={{
+                ...css.inputBase,
+                border: `1px solid ${isErr ? '#c46478' : 'rgba(120,196,164,0.25)'}`,
+              }}
+            />
+
+            {isErr && <p style={css.err}>Invalid access key — please try again.</p>}
+
+            <button
+              onClick={unlock}
+              disabled={!canSubmit}
+              style={{ ...css.btn, ...(canSubmit ? {} : css.btnDisabled) }}
+            >
+              {isBusy ? '⬡ decrypting…' : '→ unlock deck'}
+            </button>
+
+            <a href="index.html" style={css.backLink}>← back to index</a>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <PasswordGate
+        deckLabel="Enterprise Platform — Client Deck"
+        encFile="./encrypted/client.enc.json"
+      />
+    );
+  </script>
+</body>
+</html>

@@ -1,0 +1,1948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Periodica — Enterprise Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Palette — pulled directly from azetta.ai/styles.css :root tokens.
+       Sage primary on warm-dark; coral for danger/optional signals. */
+    --bg: #070a08;
+    --bg-elev: #0c110d;
+    --bg-elev-2: rgba(10, 20, 15, 0.6);
+    --bg-glow: rgba(120, 196, 164, 0.10);
+    --fg: #d4ddd6;
+    --fg-dim: #8a9e8e;
+    --fg-mute: #556055;
+    --accent: #78c4a4;          /* sage primary */
+    --accent-2: #5ab5c8;        /* secondary teal */
+    --accent-3: #c46478;        /* coral, for danger/optional signals */
+    --danger: #c46478;
+    --line: rgba(120, 196, 164, 0.15);
+    --line-strong: rgba(120, 196, 164, 0.30);
+    --grid-color: rgba(120, 196, 164, 0.04);
+
+    --font-primary: "IBM Plex Mono", "Courier New", monospace;
+    --font-display: "Chakra Petch", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", "Courier New", monospace;
+
+    /* Scale — sharper edges than before */
+    --radius-sm: 0.2rem;
+    --radius: 0.35rem;
+    --radius-lg: 0.5rem;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 24px 60px -22px rgba(0, 0, 0, 0.75);
+    --shadow-glow: 0 0 0 1px rgba(120, 196, 164, 0.30), 0 20px 50px -18px rgba(120, 196, 164, 0.18);
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-primary);
+    font-feature-settings: "ss01", "cv11", "tnum" 0, "kern";
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Atmospheric background: grid + radial vignettes */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: -1px -1px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 90%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 90%);
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 15% 0%, rgba(120, 196, 164, 0.07), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(255, 107, 157, 0.06), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(255, 209, 102, 0.04), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .deck { position: relative; height: 100%; width: 100%; z-index: 1; }
+
+  .slide {
+    position: absolute; inset: 0;
+    padding: clamp(2.5rem, 5vh, 4rem) clamp(2rem, 6vw, 6rem) clamp(2rem, 4vh, 3rem);
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start;     /* default: top-aligned, headers anchor consistently */
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  .slide.cover, .slide.signoff {     /* only intentional centered slides */
+    justify-content: center;
+    padding: clamp(2.5rem, 5vh, 5rem) clamp(2rem, 6vw, 6rem);
+  }
+  .slide::-webkit-scrollbar { width: 6px; }
+  .slide::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+  .slide.active { display: flex; }
+
+  /* Entrance animation */
+  .slide.active > * {
+    animation: rise 0.55s var(--ease) backwards;
+  }
+  .slide.active > *:nth-child(1) { animation-delay: 0.04s; }
+  .slide.active > *:nth-child(2) { animation-delay: 0.10s; }
+  .slide.active > *:nth-child(3) { animation-delay: 0.16s; }
+  .slide.active > *:nth-child(4) { animation-delay: 0.22s; }
+  .slide.active > *:nth-child(5) { animation-delay: 0.28s; }
+  .slide.active > *:nth-child(n+6) { animation-delay: 0.32s; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide.active > * { animation: none; }
+  }
+
+  /* Typography — display headlines in Chakra Petch (azetta.ai display
+     face); body in IBM Plex Mono for the technical / monospace voice. */
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 4.6vw, 4.4rem);
+    font-weight: 700; letter-spacing: -0.005em; line-height: 1.06;
+    margin-bottom: 0.5em; color: var(--fg);
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.2vw, 2.85rem);
+    font-weight: 600; letter-spacing: 0; line-height: 1.14;
+    margin-bottom: 0.55em; color: var(--fg);
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--font-display);
+    font-size: clamp(1.05rem, 1.6vw, 1.4rem);
+    font-weight: 600; letter-spacing: 0;
+    color: var(--accent); margin-bottom: 0.35em;
+  }
+  p, li {
+    font-size: clamp(0.98rem, 1.3vw, 1.18rem);
+    line-height: 1.62; color: var(--fg-dim);
+    text-wrap: pretty;
+  }
+  p strong, li strong { color: var(--fg); font-weight: 600; }
+  p + p { margin-top: 0.6em; }
+  em { color: var(--fg); font-style: italic; }
+
+  .accent { color: var(--accent); }
+  .accent-2 { color: var(--accent-2); }
+  .accent-3 { color: var(--accent-3); }
+  .small { font-size: clamp(0.88rem, 1.05vw, 1rem); color: var(--fg-dim); }
+  .micro { font-size: 0.82rem; color: var(--fg-mute); letter-spacing: 0.005em; }
+
+  /* Selection */
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  /* Top progress bar */
+  .progress {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px;
+    background: rgba(255, 255, 255, 0.04);
+    z-index: 200; pointer-events: none;
+  }
+  .progress > i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+    transition: width 0.45s var(--ease);
+    box-shadow: 0 0 10px var(--bg-glow);
+  }
+
+  /* Nav */
+  .nav {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    display: flex; gap: 0.4rem; align-items: center;
+    z-index: 100;
+    padding: 0.35rem;
+    background: rgba(15, 20, 36, 0.7);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    box-shadow: var(--shadow);
+  }
+  .nav button {
+    background: transparent; border: 0;
+    color: var(--fg-dim); padding: 0.4rem 0.85rem;
+    border-radius: 999px; cursor: pointer;
+    font-family: inherit; font-size: 0.85rem; font-weight: 500;
+    transition: color 0.18s var(--ease), background 0.18s var(--ease);
+  }
+  .nav button:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+  .nav button:active { transform: translateY(1px); }
+  .counter {
+    padding: 0.4rem 0.85rem; font-size: 0.8rem;
+    color: var(--fg-mute); font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+  }
+
+  .hint {
+    position: fixed; bottom: 1.6rem; left: 1.5rem;
+    color: var(--fg-mute); font-size: 0.78rem;
+    display: flex; gap: 0.35rem; align-items: center;
+  }
+  .hint kbd {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg);
+  }
+
+  /* Cover slide */
+  .cover {
+    align-items: center; text-align: center; justify-content: center;
+    position: relative;
+  }
+  .cover .logo {
+    font-size: clamp(4rem, 11.5vw, 9rem);
+    font-weight: 900; letter-spacing: -0.045em; line-height: 1;
+    color: var(--fg);
+    margin-bottom: 0.18em;
+    filter: drop-shadow(0 0 30px rgba(120, 196, 164, 0.18));
+  }
+  .cover .logo::after {
+    content: ".";
+    color: var(--accent);
+  }
+  .cover .tagline {
+    color: var(--fg);
+    font-size: clamp(1.2rem, 2.2vw, 1.7rem);
+    font-weight: 400; letter-spacing: -0.01em;
+    margin-bottom: 0.7em;
+  }
+  .cover p { max-width: 38em; margin: 0 auto; }
+  .cover .meta {
+    color: var(--fg-mute); font-size: 0.92rem; margin-top: 2.5rem;
+    font-family: var(--font-mono); letter-spacing: 0.02em;
+  }
+
+  /* Card primitive — flat, sharp, single hairline border */
+  .col, .pillar, .phase-card, .stat, .tl-cell {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    transition: border-color 0.18s var(--ease);
+  }
+  .col:hover, .pillar:hover, .phase-card:hover, .stat:hover, .tl-cell:hover {
+    border-color: var(--line-strong);
+  }
+
+  /* Three-column layout */
+  .cols { display: grid; gap: 1.25rem; grid-template-columns: repeat(3, 1fr); margin-top: 1.5rem; }
+  .col { padding: 1.6rem 1.5rem; }
+  .col-num {
+    font-family: var(--font-mono);
+    color: var(--accent); font-size: 0.78rem; letter-spacing: 0.12em;
+    margin-bottom: 0.6em; font-weight: 600;
+  }
+
+  .two-cols {
+    display: grid; gap: 2.5rem; grid-template-columns: 1fr 1fr;
+    margin-top: 1.5rem; align-items: start;
+  }
+
+  /* Periodic-table style pillar tiles */
+  .pillars {
+    display: grid; gap: 0.9rem;
+    grid-template-columns: repeat(5, 1fr); margin-top: 2rem;
+  }
+  .pillar {
+    padding: 1.3rem 1.2rem 1.2rem;
+    position: relative; overflow: hidden;
+  }
+  .pillar::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, var(--bg-glow), transparent 70%);
+    opacity: 0; transition: opacity 0.25s var(--ease);
+    pointer-events: none;
+  }
+  .pillar:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: var(--shadow);
+  }
+  .pillar:hover::before { opacity: 1; }
+  .pillar .num {
+    font-family: var(--font-mono); font-size: 0.72rem;
+    color: var(--accent); letter-spacing: 0.1em; font-weight: 600;
+  }
+  .pillar .name {
+    font-size: 1.1rem; font-weight: 700;
+    margin: 0.5em 0 0.4em; color: var(--fg);
+    letter-spacing: -0.01em;
+  }
+  .pillar .desc {
+    font-size: 0.85rem; color: var(--fg-dim); line-height: 1.55;
+  }
+
+  /* Tables */
+  .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    margin-top: 1.5rem;
+    font-size: clamp(0.88rem, 1.15vw, 1rem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+  }
+  th, td {
+    padding: 0.78rem 1.1rem;
+    border-bottom: 1px solid var(--line);
+    text-align: left; vertical-align: top;
+    font-variant-numeric: tabular-nums;
+  }
+  tr:last-child td { border-bottom: 0; }
+  th {
+    color: var(--fg); font-weight: 600;
+    background: rgba(255, 255, 255, 0.025);
+    font-size: 0.82rem; letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  td { color: var(--fg-dim); }
+  tbody tr { transition: background 0.15s var(--ease); }
+  tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+  td.check { color: var(--accent); font-weight: 700; }
+  td.x { color: var(--danger); }
+  td.partial { color: var(--accent-2); }
+
+  /* Bullet lists */
+  ul.bullet { list-style: none; }
+  ul.bullet li {
+    position: relative; padding-left: 1.6em; margin-bottom: 0.55em;
+  }
+  ul.bullet li::before {
+    content: ""; position: absolute; left: 0.15em; top: 0.6em;
+    width: 0.55em; height: 0.55em;
+    background: var(--accent);
+    border-radius: 1px;
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px rgba(120, 196, 164, 0.4);
+  }
+
+  /* Expandable bullet — short summary, click for detail.
+     Items without <details> render as plain bullets. */
+  ul.bullet.expandable li { margin-bottom: 0.4em; }
+  ul.bullet.expandable details {
+    /* Inherit list font; let the <li>::before diamond mark the row */
+  }
+  ul.bullet.expandable summary {
+    list-style: none;
+    cursor: pointer;
+    display: block;
+    padding-right: 1.6em;
+    position: relative;
+    color: var(--fg-dim);
+    transition: color 0.18s var(--ease);
+    border-radius: var(--radius-sm);
+  }
+  ul.bullet.expandable summary::-webkit-details-marker { display: none; }
+  ul.bullet.expandable summary::after {
+    content: "+";
+    position: absolute;
+    right: 0.2em; top: 0;
+    font-family: var(--font-mono);
+    font-size: 1.1em; font-weight: 600;
+    color: var(--accent);
+    transition: transform 0.22s var(--ease), color 0.18s var(--ease);
+    line-height: 1.5;
+  }
+  ul.bullet.expandable details[open] summary::after {
+    transform: rotate(45deg);   /* + → × */
+  }
+  ul.bullet.expandable summary:hover { color: var(--fg); }
+  ul.bullet.expandable summary:hover::after { color: var(--fg); }
+  ul.bullet.expandable summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  ul.bullet.expandable summary strong { color: var(--fg); }
+  ul.bullet.expandable .more {
+    margin-top: 0.55em;
+    padding: 0.15em 0 0.4em;
+    color: var(--fg-mute);
+    font-size: 0.94em;
+    line-height: 1.6;
+    border-left: 1px solid var(--line);
+    padding-left: 1em;
+    margin-left: -0.1em;
+    animation: bullet-expand 0.28s var(--ease);
+  }
+  ul.bullet.expandable .more strong { color: var(--fg-dim); }
+  ul.bullet.expandable .more code {
+    font-size: 0.92em;
+  }
+  @keyframes bullet-expand {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    ul.bullet.expandable .more { animation: none; }
+    ul.bullet.expandable summary::after { transition: none; }
+  }
+  /* Print: open all details so static export shows everything */
+  @media print {
+    ul.bullet.expandable details { display: block; }
+    ul.bullet.expandable details > * { display: block !important; }
+    ul.bullet.expandable summary::after { display: none; }
+    ul.bullet.expandable .more { border-left: 0; padding-left: 0; }
+  }
+
+  /* Section labels — code-comment style, no pill chrome */
+  .label {
+    display: block;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    padding: 0; background: none; border: 0;
+    font-size: 0.74rem; letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 500;
+    margin-bottom: 1.4em;
+    opacity: 0.85;
+  }
+  .label::before { content: "// "; color: var(--fg-mute); }
+
+  /* Phase / accent-bordered cards */
+  .phase-card {
+    border-left: 3px solid var(--accent);
+    padding: 1.4rem 1.8rem;
+    margin-top: 1rem;
+    position: relative;
+  }
+  .phase-card::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 60px;
+    background: linear-gradient(90deg, var(--bg-glow), transparent);
+    pointer-events: none; opacity: 0.5;
+  }
+  .phase-card.p2 { border-left-color: var(--accent-2); }
+  .phase-card.p2::after { background: linear-gradient(90deg, rgba(255, 209, 102, 0.07), transparent); }
+  .phase-card.p3 { border-left-color: var(--accent-3); }
+  .phase-card.p3::after { background: linear-gradient(90deg, rgba(255, 107, 157, 0.07), transparent); }
+  .phase-card > * { position: relative; z-index: 1; }
+
+  /* Stats */
+  .stat {
+    display: inline-block;
+    padding: 1.1rem 1.5rem;
+    margin-right: 0.6rem;
+    text-align: left;
+  }
+  .stat .num {
+    font-size: clamp(2rem, 3vw, 2.6rem);
+    font-weight: 800;
+    background: linear-gradient(180deg, var(--fg) 0%, var(--accent) 130%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    display: block; line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .lbl {
+    font-size: 0.72rem; color: var(--fg-mute);
+    text-transform: uppercase; letter-spacing: 0.12em;
+    margin-top: 0.5em; display: block; font-weight: 500;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: grid; gap: 0.85rem;
+    grid-template-columns: repeat(5, 1fr); margin-top: 1.5rem;
+  }
+  .tl-cell { padding: 1rem 1.1rem; }
+  .tl-cell .when {
+    color: var(--accent); font-size: 0.74rem;
+    font-family: var(--font-mono); letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .tl-cell .what {
+    font-size: 0.92rem; color: var(--fg);
+    margin-top: 0.4em; font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .tl-cell .arr {
+    color: var(--fg-mute); font-size: 0.78rem;
+    margin-top: 0.35em; font-variant-numeric: tabular-nums;
+  }
+
+  /* Inline code */
+  code, .mono {
+    font-family: var(--font-mono);
+    background: rgba(120, 196, 164, 0.08);
+    padding: 0.12em 0.4em; border-radius: 0.25em;
+    font-size: 0.88em; color: var(--accent);
+    border: 1px solid rgba(120, 196, 164, 0.12);
+  }
+
+  /* ───────────────────────── New components (audit redesign) ───────────────────────── */
+
+  /* Utility spacing — kills inline margin-top noise */
+  .mt-sm  { margin-top: 0.6rem; }
+  .mt-md  { margin-top: 1.2rem; }
+  .mt-lg  { margin-top: 1.8rem; }
+  .mt-xl  { margin-top: 2.4rem; }
+  .mt-xxl { margin-top: 3.5rem; }
+
+  /* Periodic-table style element tiles (slide 4) */
+  .elements {
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(5, 1fr);
+    margin-top: 2.2rem;
+  }
+  .element {
+    --elem-color: var(--accent);
+    position: relative;
+    display: grid;
+    grid-template-areas:
+      "num   group"
+      "sym   sym"
+      "name  name"
+      "mass  mass";
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-columns: auto 1fr;
+    gap: 0.2rem 0;
+    background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg-elev-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem 1.2rem;
+    aspect-ratio: 0.78;
+    overflow: hidden;
+    transition: transform 0.25s var(--ease), border-color 0.2s var(--ease), box-shadow 0.25s var(--ease);
+    cursor: default;
+  }
+  .element::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 100% 70% at 50% 0%, var(--elem-color), transparent 65%);
+    opacity: 0.10; pointer-events: none;
+    transition: opacity 0.25s var(--ease);
+  }
+  .element::after {
+    content: "";
+    position: absolute; left: 0; right: 0; top: 0;
+    height: 2px;
+    background: var(--elem-color);
+    opacity: 0.6;
+  }
+  .element:hover {
+    transform: translateY(-4px);
+    border-color: var(--elem-color);
+    box-shadow:
+      0 24px 48px -20px color-mix(in srgb, var(--elem-color) 35%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .element:hover::before { opacity: 0.22; }
+  .el-num {
+    grid-area: num;
+    font-family: var(--font-mono);
+    font-size: 0.78rem; font-weight: 700;
+    color: var(--elem-color);
+    letter-spacing: 0.06em;
+  }
+  .el-group {
+    grid-area: group;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 0.62rem; font-weight: 500;
+    color: var(--fg-mute);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    align-self: center;
+  }
+  .el-symbol {
+    grid-area: sym;
+    font-size: clamp(2.4rem, 4.4vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -0.045em; line-height: 1;
+    color: var(--fg);
+    align-self: center;
+    margin: 0.6rem 0 0.3rem;
+  }
+  .el-name {
+    grid-area: name;
+    font-size: 0.95rem; font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+  }
+  .el-mass {
+    grid-area: mass;
+    font-size: 0.72rem;
+    color: var(--fg-mute);
+    letter-spacing: 0.02em;
+    margin-top: 0.3rem;
+    line-height: 1.4;
+  }
+
+  /* Sequence flow diagram (slide 9) */
+  .flow {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: stretch;
+    gap: 0.4rem;
+    margin-top: 2rem;
+  }
+  .flow-node {
+    --node-color: var(--accent);
+    background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg-elev-2) 100%);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--node-color);
+    border-radius: var(--radius);
+    padding: 1.4rem 1.4rem 1.5rem;
+    display: flex; flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .flow-node::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 100% 60% at 50% 0%,
+      color-mix(in srgb, var(--node-color) 18%, transparent), transparent 70%);
+    pointer-events: none;
+  }
+  .flow-node > * { position: relative; z-index: 1; }
+  .flow-node.p2 { --node-color: var(--accent-2); }
+  .flow-node.p3 { --node-color: var(--accent-3); }
+  .fn-num {
+    font-family: var(--font-mono);
+    color: var(--node-color); font-size: 0.78rem;
+    letter-spacing: 0.12em; font-weight: 600;
+    text-transform: uppercase;
+  }
+  .fn-title {
+    font-size: clamp(1.25rem, 2vw, 1.65rem);
+    font-weight: 700; color: var(--fg);
+    margin-top: 0.3rem; letter-spacing: -0.015em;
+  }
+  .fn-meta {
+    font-size: 0.85rem; color: var(--fg-dim);
+    margin-top: 0.6rem; line-height: 1.5;
+  }
+  .fn-meta strong { color: var(--fg); }
+  .fn-unlocks {
+    margin-top: auto; padding-top: 0.9rem;
+    border-top: 1px dashed var(--line-strong);
+    color: var(--node-color); font-size: 0.78rem;
+    font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .fn-unlocks::before { content: "↳"; opacity: 0.7; }
+  .flow-arrow {
+    align-self: center;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0.25rem;
+    color: var(--fg-mute);
+    padding: 0 0.3rem;
+  }
+  .flow-arrow .arr {
+    font-size: 1.6rem; color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  .flow-arrow .lbl {
+    font-size: 0.62rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--fg-mute);
+    font-weight: 600;
+  }
+
+  /* Traction metric dashboard (slide 13) */
+  .metrics {
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(4, 1fr);
+    margin-top: 1.8rem;
+  }
+  .metric {
+    background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg-elev-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.5rem 1.4rem 1.3rem;
+    position: relative; overflow: hidden;
+    transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .metric::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px; background: var(--accent);
+    opacity: 0.5;
+  }
+  .metric:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+  .m-num {
+    font-size: clamp(2.2rem, 3.6vw, 3rem);
+    font-weight: 800;
+    background: linear-gradient(180deg, var(--fg) 0%, var(--accent) 130%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    line-height: 1; letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    display: flex; align-items: baseline; gap: 0.15em;
+  }
+  .m-num .m-unit {
+    font-size: 0.55em; color: var(--accent); -webkit-text-fill-color: var(--accent);
+    font-weight: 700;
+  }
+  .m-label {
+    margin-top: 0.6rem;
+    font-size: 0.72rem;
+    color: var(--fg-mute);
+    text-transform: uppercase; letter-spacing: 0.12em;
+    font-weight: 600;
+  }
+  .m-context {
+    margin-top: 0.7rem;
+    font-size: 0.85rem; color: var(--fg-dim);
+    line-height: 1.5;
+  }
+  .checklist {
+    margin-top: 1.8rem;
+    display: grid; gap: 0.55rem;
+  }
+  .chk-item {
+    display: flex; align-items: center; gap: 0.8rem;
+    font-size: clamp(0.92rem, 1.2vw, 1.05rem);
+    color: var(--fg-dim);
+    padding: 0.45rem 0.2rem;
+  }
+  .chk-item strong { color: var(--fg); font-weight: 600; }
+  .chk-icon {
+    flex-shrink: 0;
+    width: 1.5rem; height: 1.5rem;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 700;
+    background: rgba(120, 196, 164, 0.12);
+    color: var(--accent);
+    border: 1px solid rgba(120, 196, 164, 0.25);
+  }
+  .chk-item.partial .chk-icon {
+    background: rgba(255, 209, 102, 0.10);
+    color: var(--accent-2);
+    border-color: rgba(255, 209, 102, 0.25);
+  }
+
+  /* Expandable chk-item: same shape, summary holds icon+lead, .more holds detail */
+  details.chk-item { padding: 0.4rem 0.2rem; display: block; }
+  details.chk-item > summary {
+    display: flex; align-items: center; gap: 0.8rem;
+    list-style: none;
+    cursor: pointer;
+    position: relative;
+    padding-right: 1.8em;
+    color: var(--fg-dim);
+    font-size: clamp(0.92rem, 1.2vw, 1.05rem);
+    border-radius: var(--radius-sm);
+    transition: color 0.18s var(--ease);
+  }
+  details.chk-item > summary::-webkit-details-marker { display: none; }
+  details.chk-item > summary > span:not(.chk-icon) {
+    flex: 1; min-width: 0;
+  }
+  details.chk-item > summary strong { color: var(--fg); font-weight: 600; }
+  details.chk-item > summary::after {
+    content: "+";
+    position: absolute; right: 0.3em; top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 1.1em; font-weight: 600;
+    color: var(--accent);
+    transition: transform 0.22s var(--ease), color 0.18s var(--ease);
+  }
+  details.chk-item[open] > summary::after {
+    transform: translateY(-50%) rotate(45deg);
+  }
+  details.chk-item > summary:hover { color: var(--fg); }
+  details.chk-item > summary:hover::after { color: var(--fg); }
+  details.chk-item > summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  details.chk-item .more {
+    margin: 0.55em 0 0;
+    margin-left: calc(1.5rem + 0.8rem);   /* align under text, past icon */
+    padding-left: 1em;
+    border-left: 1px solid var(--line);
+    color: var(--fg-mute);
+    font-size: 0.94em; line-height: 1.6;
+    animation: bullet-expand 0.28s var(--ease);
+  }
+  details.chk-item .more strong { color: var(--fg-dim); }
+  @media (prefers-reduced-motion: reduce) {
+    details.chk-item .more { animation: none; }
+    details.chk-item > summary::after { transition: none; }
+  }
+  @media print {
+    details.chk-item { display: block; }
+    details.chk-item > * { display: block !important; }
+    details.chk-item > summary::after { display: none; }
+    details.chk-item .more {
+      border-left: 0; padding-left: 0;
+    }
+  }
+
+  /* Closing signoff (slide 17) */
+  .signoff {
+    align-items: center; text-align: center; justify-content: center;
+    position: relative;
+  }
+  .signoff::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(120, 196, 164, 0.08), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .signoff > * { position: relative; z-index: 1; }
+  .signoff-logo {
+    font-size: clamp(5rem, 14vw, 11rem);
+    font-weight: 900; letter-spacing: -0.05em; line-height: 1;
+    color: var(--fg);
+    filter: drop-shadow(0 0 50px rgba(120, 196, 164, 0.22));
+    margin-bottom: 0.1em;
+  }
+  .signoff-logo::after {
+    content: ".";
+    color: var(--accent);
+  }
+  .signoff-line {
+    font-size: clamp(1.4rem, 2.6vw, 2.2rem);
+    font-weight: 600; color: var(--fg);
+    letter-spacing: -0.015em; line-height: 1.2;
+    margin: 0 auto 1rem; max-width: 22ch;
+  }
+  .signoff-tagline {
+    color: var(--fg-dim); max-width: 38em; margin: 0 auto;
+    font-size: clamp(0.95rem, 1.2vw, 1.1rem); line-height: 1.6;
+  }
+  .signoff-meta {
+    margin-top: 3.5rem;
+    display: inline-flex; gap: 1rem; align-items: center;
+    padding: 0.7rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(15, 20, 36, 0.5);
+    backdrop-filter: blur(10px);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+  }
+  .signoff-meta a {
+    color: var(--fg); text-decoration: none;
+    transition: color 0.18s var(--ease);
+  }
+  .signoff-meta a:hover { color: var(--accent); }
+  .signoff-meta span { color: var(--fg-mute); }
+
+  /* Slide-level layout modifiers
+     Top-alignment is the DEFAULT (.slide rule above) — keeps the header
+     at a consistent vertical position across slides. The modifiers below
+     only affect inner spacing. */
+  .slide.start { padding-top: clamp(3.5rem, 7vh, 6rem); }
+  .slide.dense {
+    /* Tighter inner spacing for content-heavy slides */
+    gap: 0.9rem;
+  }
+  .slide.dense > * + * { margin-top: 0; }
+  .slide.dense h2 { margin-bottom: 0.4em; }
+  .slide.dense > p { max-width: 70ch; }
+  .slide.dense .metrics,
+  .slide.dense .cols,
+  .slide.dense .two-cols,
+  .slide.dense .elements,
+  .slide.dense .timeline,
+  .slide.dense .pillars { margin-top: 1.1rem; }
+  .slide.dense .checklist { margin-top: 1.3rem; }
+  .slide.dense table { margin-top: 1.1rem; }
+  .slide.dense .phase-card { margin-top: 0.8rem; }
+
+  /* GTM tracks — compact 3-column comparison */
+  .tracks-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.4rem;
+  }
+  .track-card {
+    --tc-color: var(--accent);
+    background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg-elev-2) 100%);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--tc-color);
+    border-radius: var(--radius);
+    padding: 1.3rem 1.25rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .track-card.primary {
+    box-shadow: 0 0 0 1px var(--tc-color), 0 18px 48px -16px color-mix(in srgb, var(--tc-color) 30%, transparent);
+  }
+  .track-card.concurrent { --tc-color: var(--accent-3); }
+  .track-card.optional   { --tc-color: var(--accent-2); }
+  .track-card::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 100% 50% at 50% 0%,
+      color-mix(in srgb, var(--tc-color) 14%, transparent), transparent 70%);
+    pointer-events: none;
+  }
+  .track-card > * { position: relative; z-index: 1; }
+  .track-num {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: var(--tc-color);
+    text-transform: uppercase;
+  }
+  .track-name {
+    font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: -0.012em;
+    line-height: 1.2;
+  }
+  .track-row { display: flex; flex-direction: column; gap: 0.18rem; }
+  .track-row .key {
+    font-size: 0.62rem;
+    color: var(--fg-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+  }
+  .track-row .val {
+    font-size: 0.86rem;
+    color: var(--fg-dim);
+    line-height: 1.5;
+  }
+  .track-row .val strong { color: var(--fg); }
+  .track-pitch {
+    margin-top: auto;
+    padding-top: 0.8rem;
+    border-top: 1px dashed var(--line-strong);
+    font-size: 0.85rem;
+    color: var(--fg);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .track-pitch::before { content: "❝ "; color: var(--tc-color); font-style: normal; }
+
+  /* Audit tiers — 4-column variant of .cols */
+  .cols.tiers { grid-template-columns: repeat(4, 1fr); }
+
+  /* Phase cards — 4-column with tighter chrome (slide 12) */
+  .cols.phases {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.9rem;
+  }
+  .cols.phases .col { padding: 1.25rem 1.2rem 1.3rem; }
+  .cols.phases h3 { font-size: clamp(1rem, 1.4vw, 1.22rem); margin-bottom: 0.3em; }
+  .cols.phases p {
+    font-size: clamp(0.86rem, 1vw, 0.95rem);
+    line-height: 1.55;
+  }
+  .cols.phases .col-num {
+    font-size: 0.7rem;
+    margin-bottom: 0.5em;
+  }
+
+  /* Slide 8 — tighter flow + cards stacked under it */
+  .slide.compact .flow { margin-top: 1rem; }
+  .slide.compact .flow-node { padding: 1.05rem 1.15rem 1.2rem; }
+  .slide.compact .fn-meta { font-size: 0.82rem; }
+  .slide.compact .cols { margin-top: 0.9rem; gap: 0.8rem; }
+  .slide.compact .cols .col { padding: 1.1rem 1.15rem 1.2rem; }
+  .slide.compact .cols h3 { font-size: clamp(0.98rem, 1.3vw, 1.15rem); margin-bottom: 0.25em; }
+  .slide.compact .cols p { font-size: 0.9rem; line-height: 1.55; }
+  .slide.compact .cols .col-num { font-size: 0.68rem; margin-bottom: 0.4em; }
+  .slide.compact > h3 { font-size: clamp(0.95rem, 1.3vw, 1.1rem); }
+
+  /* Slide 13 — dense comparison table */
+  .slide.dense table.compact { font-size: clamp(0.82rem, 1.05vw, 0.95rem); margin-top: 0.9rem; }
+  .slide.dense table.compact th { font-size: 0.74rem; padding: 0.55rem 0.7rem; }
+  .slide.dense table.compact td { padding: 0.5rem 0.7rem; line-height: 1.45; }
+  .tier-cost {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.2rem 0.55rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: rgba(120, 196, 164, 0.1);
+    border: 1px solid rgba(120, 196, 164, 0.2);
+    border-radius: 999px;
+  }
+
+  /* Continuation marker — links a split slide back to its parent */
+  .cont-marker {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-mute);
+    margin-bottom: 0.4rem;
+  }
+  .cont-marker::before { content: "↳ "; color: var(--accent); }
+
+  /* Print mode — light, no inversion of accent */
+  @media print {
+    @page { size: 16in 9in; margin: 0.4in; }
+    html, body { overflow: visible; height: auto; }
+    body { background: white; color: #111; }
+    body::before, body::after { display: none; }
+    .slide {
+      display: flex !important;
+      page-break-after: always;
+      position: relative;
+      height: 9in;
+      padding: 0.5in 0.7in;
+    }
+    .slide.active > * { animation: none; }
+    .nav, .hint, .progress { display: none !important; }
+    h1, h2 { color: #0a0a0a; }
+    h3 { color: #0d6e60; }
+    p, li, td, th { color: #2a2a2a; }
+    .col, .pillar, .phase-card, .stat, .tl-cell,
+    .element, .flow-node, .metric {
+      background: #fafafa; border-color: #ddd;
+      box-shadow: none;
+    }
+    .element::before, .element::after,
+    .flow-node::before, .metric::before,
+    .signoff::before { display: none; }
+    .el-symbol, .signoff-logo {
+      background: none; -webkit-text-fill-color: #0a0a0a;
+      color: #0a0a0a; filter: none;
+    }
+    .el-num, .fn-num, .fn-unlocks, .flow-arrow .arr {
+      color: #0d6e60 !important; text-shadow: none;
+    }
+    .m-num { background: none; -webkit-text-fill-color: #0a0a0a; color: #0a0a0a; }
+    .chk-icon { background: #e6f8f5; color: #0d6e60; border-color: #b8e6dd; }
+    .signoff-meta { background: white; border-color: #ddd; }
+    .signoff-meta a { color: #0a0a0a; }
+    table { border-color: #ddd; background: white; }
+    th { background: #f3f3f3; color: #0a0a0a; }
+    .label {
+      background: #e6f8f5; color: #0d6e60;
+      border-color: #b8e6dd;
+    }
+    .accent { color: #0d6e60; }
+    .accent-2 { color: #b8830f; }
+    .accent-3 { color: #c0376c; }
+    .stat .num {
+      background: none; -webkit-text-fill-color: #0a0a0a; color: #0a0a0a;
+    }
+    .cover .logo {
+      background: none; -webkit-text-fill-color: #0a0a0a;
+      color: #0a0a0a; filter: none;
+    }
+    code, .mono { background: #f0f8f7; color: #0d6e60; border-color: #cae8e0; }
+  }
+
+  /* Responsive collapse */
+  @media (max-width: 1100px) {
+    .pillars, .elements { grid-template-columns: repeat(3, 1fr); }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .timeline { grid-template-columns: repeat(3, 1fr); }
+    .cols.tiers, .cols.phases { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 800px) {
+    .cols, .pillars, .elements, .timeline, .two-cols, .metrics,
+    .tracks-grid, .cols.tiers {
+      grid-template-columns: 1fr;
+    }
+    .flow {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+    .flow-arrow { transform: rotate(90deg); padding: 0.3rem 0; }
+    .element { aspect-ratio: auto; }
+    .slide { padding: 2rem 1.25rem; }
+    .nav { bottom: 1rem; right: 1rem; }
+    .nav button { padding: 0.8rem 1.2rem; } /* larger touch targets */
+    .hint { display: none; }
+    table { font-size: 0.85rem; }
+    th, td { padding: 0.5rem 0.6rem; }
+  }
+
+  /* Keyboard focus — visible ring without disrupting hover */
+  .nav button:focus-visible,
+  .signoff-meta a:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 999px;
+  }
+  .nav button:focus { outline: none; }   /* mouse focus stays clean */
+
+  /* Overflow affordance — fade at bottom of any slide that scrolls */
+  .slide {
+    background-image: linear-gradient(to top,
+      rgba(10, 10, 10, 0.95) 0%, rgba(10, 10, 10, 0) 4rem);
+    background-attachment: local, local;
+    background-repeat: no-repeat;
+    background-position: bottom;
+  }
+  .slide.cover, .slide.signoff { background-image: none; }
+
+  /* portrait-mobile: prompt user to rotate */
+  .rotate-hint {
+    display: none;
+    position: fixed; inset: 0; z-index: 10000;
+    background: #070a08;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.5rem; padding: 2rem; text-align: center;
+  }
+  @media (orientation: portrait) and (max-width: 768px) {
+    .rotate-hint { display: flex; }
+  }
+  .rotate-hint__phone {
+    width: 52px; height: 52px;
+    animation: rh-tilt 2.8s ease-in-out infinite;
+  }
+  @keyframes rh-tilt {
+    0%, 20%  { transform: rotate(0deg); }
+    55%, 80% { transform: rotate(-90deg); }
+    100%     { transform: rotate(0deg); }
+  }
+  .rotate-hint__label {
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+    font-size: 0.75rem; color: #8a9e8e;
+    max-width: 180px; line-height: 1.7;
+  }
+
+</style>
+</head>
+<body>
+  <div class="rotate-hint" role="status" aria-live="polite">
+    <svg class="rotate-hint__phone" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="14" y="4" width="24" height="40" rx="4" stroke="#78c4a4" stroke-width="2"/>
+      <line x1="14" y1="10" x2="38" y2="10" stroke="#78c4a4" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="26" cy="40" r="2" fill="#78c4a4"/>
+    </svg>
+    <p class="rotate-hint__label">Rotate your device to landscape view</p>
+  </div>
+
+<div class="deck">
+
+<!-- 1. COVER -->
+<section class="slide active cover">
+  <div>
+    <div class="logo">Periodica</div>
+    <div class="tagline">The on-device DRM standard for AI models. Cross-vendor, auditable, shipping.</div>
+    <p style="max-width: 48em; margin: 0 auto;">
+      One platform — encoder, license server, audit pipeline, marketplace.
+      Weights encrypted at rest, watermarked per-license, revocable from
+      the server. Built for OEMs shipping AI to phones, cars, headsets,
+      and medical devices; for regulated industries that need provenance
+      to deploy; for creators selling a fine-tune the way Apple sells an
+      app. Live demo: <code>huggingface.co/azettaai/gemma-4-E4B-it</code>
+      — 7.32 GB of Gemma 4, public on the hub, mathematically inert
+      without my local key.
+    </p>
+    <div class="meta">
+      Taha Bouhsine · Azetta.ai · taha@azetta.ai · 2026
+    </div>
+  </div>
+</section>
+
+<!-- 2. PROBLEM -->
+<section class="slide">
+  <div class="label">02 · PROBLEM</div>
+  <h1>Creators and enterprise hit the <span class="accent">same wall</span>.</h1>
+  <p><strong>Creator side.</strong> Six months of fine-tuning. Two options. Lock it behind an API — no local use, no edge deployment, no offline. Or post it free on HuggingFace — pirated within hours, zero per-customer attribution, zero revenue.</p>
+  <p><strong>Enterprise side.</strong> Auto OEM ships AI to a million cars. Every car holds the weights at rest. No cross-vendor standard for encrypted-on-device, per-vehicle watermarking, or server-side revocation — so the choice is roll your own DRM (years of work) or accept the leak. And when the weights leak, the data baked into them — proprietary training corpus, customer chats, trade secrets — leaks with them.</p>
+  <p>The third option — sell the model the way Apple sells an app, with cryptographic protection on every device, per-license watermarks, and revocation that actually revokes — doesn't exist. Creators need it. OEMs need it. Regulated industries need it. None of the model hubs ship it. <strong>That's the wall. The rest of this deck is how we walked through it.</strong></p>
+</section>
+
+<!-- 3. SECURITY PREMISE — open weights are a data breach -->
+<section class="slide">
+  <div class="label">03 · SECURITY_PREMISE</div>
+  <h1>Open weights are a <span class="accent">data breach</span> waiting to happen.</h1>
+  <p>Model weights aren't a binary blob. They are the training data, compressed into parameters. Anyone who obtains the weights can extract what was trained into them — and this isn't speculative. It's the published consensus across three independent lines of research.</p>
+
+  <div class="cols">
+    <div class="col">
+      <div class="col-num">01 · EXTRACTION</div>
+      <h3>Training data is recoverable from weights</h3>
+      <p>Carlini et al. (2021) extracted memorized training samples — including <strong>PII, code, full URLs</strong> — from GPT-2 by querying the model. Subsequent work has scaled the technique to LLaMA-class and production fine-tunes.</p>
+    </div>
+    <div class="col">
+      <div class="col-num">02 · LOCATION</div>
+      <h3>Knowledge is locatable in parameters</h3>
+      <p>ROME (Meng et al. 2022) and MEMIT (Meng et al. 2023) demonstrate that specific facts live in identifiable weight regions and can be edited <em>in place</em>. <strong>Azetta's own research</strong> on knowledge editing of neural networks confirms the obverse: <em>if you can edit it, you can read it.</em></p>
+    </div>
+    <div class="col">
+      <div class="col-num">03 · FINE-TUNES</div>
+      <h3>Custom-trained models leak the most</h3>
+      <p>Fine-tunes inherit proprietary documents, customer chats, internal codebases, and PII directly into the weight space. <strong>Distributing the weights = distributing the training set.</strong> The richer the model, the worse the breach.</p>
+    </div>
+  </div>
+
+  <p class="micro mt-md"><strong>The implication.</strong> Open-weight distribution is the security analog of publishing your database. Periodica's protocol isn't piracy protection — it's <strong>data-leak protection</strong>. We built it because our research convinced us this is where on-device AI security is heading: regulators will require model-weight confidentiality the same way they require database confidentiality today.</p>
+</section>
+
+<!-- 4. SOLUTION -->
+<section class="slide">
+  <div class="label">04 · SOLUTION</div>
+  <h1>Periodica is the <span class="accent">third option</span>.</h1>
+  <div class="two-cols">
+    <div>
+      <h3>For creators</h3>
+      <ul class="bullet">
+        <li><strong>DRM that actually works.</strong> Models distributed encrypted; license keys revoke on cancellation. Per-customer watermarking traces every leak.</li>
+        <li><strong>Marketplace billing.</strong> Subscriptions, one-off purchases, revenue share. Stripe handles the boring parts.</li>
+        <li><strong>Verified namespace.</strong> Brand protection from day 1; impersonators blocked.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>For buyers and enterprises</h3>
+      <ul class="bullet">
+        <li><strong>Curated catalog.</strong> Audited at L1 by default; behavioral + provenance audits at higher tiers.</li>
+        <li><strong>Knowledge maps.</strong> Capability radar, fine-tune delta, lineage graph for every audited model.</li>
+        <li><strong>Fleet deploy + BYOK.</strong> Auto OEMs, AR/VR, phones, IoT — encrypted weights at rest, per-device key binding, server-side revocation. Drop-in SDK Integration in the enterprise tier.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4. THE FIVE PILLARS — table-form, with role + status -->
+<section class="slide dense">
+  <div class="label">05 · PRODUCT / FIVE_PILLARS</div>
+  <h2>Five integrated pillars. One platform.</h2>
+  <p>Each row is a piece of the platform. Each ships independently. Stacked, they're the only integrated cross-vendor on-device DRM standard.</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 3.5em;">#</th>
+        <th>Pillar</th>
+        <th>What it does</th>
+        <th>Today</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color: var(--accent);">01</strong></td>
+        <td><strong>Distribution</strong></td>
+        <td>Encrypted, watermarked, revocable model delivery to any device. <code>.lamp</code> bulk on CDN, <code>.rub</code> sidecar + key behind auth.</td>
+        <td class="check">Shipping · live demo on HF</td>
+      </tr>
+      <tr>
+        <td><strong style="color: var(--accent);">02</strong></td>
+        <td><strong>Audit</strong></td>
+        <td>Four-tier pipeline: L1 (free auto-scan) → L2 (paid behavioral) → L3 (provenance-attested) → L4 (Periodica Certified, third-party).</td>
+        <td class="partial">L1 + L2 shipping; L3 / L4 with security-firm partners (Y2)</td>
+      </tr>
+      <tr>
+        <td><strong style="color: var(--accent);">03</strong></td>
+        <td><strong>Knowledge maps</strong></td>
+        <td>Capability radar, fine-tune delta, lineage graph, knowledge-cutoff probe — research-grade approximations honestly framed.</td>
+        <td class="partial">Integrated into the audit pipeline; matures with L2+</td>
+      </tr>
+      <tr>
+        <td><strong style="color: var(--accent);">04</strong></td>
+        <td><strong>Marketplace</strong></td>
+        <td>Discovery, billing, namespace governance — App-Store-shaped (25% / 15% take rate). Per-model subscriptions, one-off purchases, revenue share.</td>
+        <td class="partial">Take-rate + namespace governance designed; ships with Phase 1 catalog</td>
+      </tr>
+      <tr>
+        <td><strong style="color: var(--accent-3);">05</strong></td>
+        <td><strong>Blueprints</strong></td>
+        <td>Cross-framework manifest — same model, any runtime. Per-tensor dtype, layer order, architecture descriptor; full cross-framework graph deferred to v7+.</td>
+        <td class="check">v6.2 / v6.3 metadata extensions shipped</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="micro mt-md">No competitor has more than two pillars. HuggingFace covers (4) only — no DRM, no audit. Apple Core ML covers (1) only on Apple silicon. NVIDIA NIM covers (1) only on H100/H200. Periodica is the only stack that integrates all five cross-vendor.</p>
+</section>
+
+
+
+
+
+
+
+<!-- 10. OUR CUSTOMER / THE EDGE FLEET -->
+<section class="slide dense">
+  <div class="label">11 · OUR_CUSTOMER / THE_EDGE_FLEET</div>
+  <h2>Where the deals actually land.</h2>
+  <p>Reference targets across the four major device classes. Each row represents an enterprise sales motion at $200k–$2M/yr ACV, gated by a real regulatory deadline.</p>
+
+  <div class="table-wrap">
+  <table>
+    <tbody><tr>
+      <th>Device class</th>
+      <th>Why Periodica</th>
+      <th>Reference targets</th>
+    </tr>
+    <tr>
+      <td><strong>Cars</strong></td>
+      <td>Onboard voice agents, driver assist, infotainment AI. Tear-down-resistant weights; UNECE WP.29 cybersecurity provenance.</td>
+      <td>Tesla, Mercedes-Benz, BMW, Volvo, Rivian, Stellantis</td>
+    </tr>
+    <tr>
+      <td><strong>AR / VR / glasses</strong></td>
+      <td>Always-on perception models. Constrained NAND + thermals; theft of premium glasses must not yield extractable weights.</td>
+      <td>Meta (Ray-Ban), Apple Vision, Snap Spectacles, smart-glass startups</td>
+    </tr>
+    <tr>
+      <td><strong>Smartphones</strong></td>
+      <td>On-device LLMs, camera AI, voice. Per-device key binding so account-bound entitlements survive a stolen device.</td>
+      <td>Samsung, Xiaomi, OPPO, Pixel partners, Nothing</td>
+    </tr>
+    <tr>
+      <td><strong>Industrial / IoT / medical</strong></td>
+      <td>Long-lived devices, regulated provenance (FDA, EU AI Act high-risk, ISO 13485). Server-side revocation for recalls.</td>
+      <td>Siemens, GE Healthcare, ABB, Philips, Medtronic</td>
+    </tr>
+  </tbody></table>
+  </div>
+
+  <p class="micro mt-md">Reference targets, not signed customers. BYOK and on-prem license server are usually non-negotiable for this segment. Pricing band benchmarked against the AI-security comp set rather than committed.</p>
+</section>
+
+<!-- 15. REGULATORY FORCING FUNCTIONS -->
+<section class="slide dense">
+  <div class="label">16 · REGULATORY / FORCING_FUNCTIONS</div>
+  <h2>The buyer can't say no.</h2>
+  <p>Four mandatory frameworks active or imminent in 2026. Procurement language in regulated verticals already requires documented model provenance.</p>
+
+  <div class="cols phases" style="margin-top: 1.2rem;">
+    <div class="col">
+      <div class="col-num">EU AI ACT</div>
+      <h3>High-risk class</h3>
+      <p>Enforcement starts <strong>Aug 2, 2026</strong>. Detailed technical documentation, conformity assessment, CE marking, EU database registration. Article 50 effectively mandates C2PA-style content credentials.</p>
+      <p class="micro mt-sm" style="color: var(--accent);">~3 months out. Procurement RFPs already requiring "documented model provenance."</p>
+    </div>
+    <div class="col">
+      <div class="col-num">UNECE WP.29</div>
+      <h3>R155 / R156 (automotive)</h3>
+      <p>CSMS + SUMS mandatory for <strong>all new vehicles</strong> sold in EU / Japan / Korea since <strong>July 2024</strong>. Type-approval bodies are denying approvals for non-compliant vehicles.</p>
+      <p class="micro mt-sm" style="color: var(--accent);">Already biting. VW Group, Stellantis, Bosch publicly compliant.</p>
+    </div>
+    <div class="col">
+      <div class="col-num">FDA</div>
+      <h3>Premarket cybersecurity guidance</h3>
+      <p>Updated <strong>March 2026</strong>. SBOM mandatory under FD&amp;C Act §524B. <strong>FDA has rejected 510(k) / PMA submissions</strong> for inadequate cybersecurity. PCCPs require documented validation.</p>
+      <p class="micro mt-sm" style="color: var(--accent);">Active enforcement. Model-BOM extension is the natural fit.</p>
+    </div>
+    <div class="col">
+      <div class="col-num">US POLICY</div>
+      <h3>Model-theft category</h3>
+      <p><strong>April 2026</strong>: State Department cable on DeepSeek / Moonshot / MiniMax distillation theft. Stop AI Model Theft Act (Huizenga). Frontier Model Forum joint intelligence sharing.</p>
+      <p class="micro mt-sm" style="color: var(--accent);">First time the US government treats AI model IP as critical infrastructure.</p>
+    </div>
+  </div>
+
+  <p class="micro mt-md">ISO/IEC 42001 (AI Management System) certifications grew 20% in 2024 — becoming a procurement check-box. Periodica's audit pipeline maps to AIMS Clause 6.1 directly. Pitch language: <em>"we make compliance cheaper and verifiable"</em> — not <em>"we are compliance"</em>. Honest framing wins DD.</p>
+</section>
+
+<!-- 17. AUDIT PIPELINE -->
+<section class="slide dense">
+  <div class="label">17 · REGULATORY / AUDIT_PIPELINE</div>
+  <h2>The audit pipeline IS the regulatory paper trail.</h2>
+  <p>Customers don't wonder whether to buy audits. <strong>UNECE WP.29</strong> (mandatory in Europe since 2024), <strong>FDA cybersecurity guidance</strong> (since Sept 2023), <strong>EU AI Act high-risk class</strong>, <strong>ISO 13485</strong> — all require documented model provenance and protection. We sell the document.</p>
+
+  <div class="cols tiers">
+    <div class="col">
+      <div class="col-num">L1</div>
+      <h3>Safety-Scanned</h3>
+      <p>Spectral signature, magnitude outliers, integrity check, watermark presence. Auto-runs on upload.</p>
+      <span class="tier-cost">Included</span>
+    </div>
+    <div class="col">
+      <div class="col-num">L2</div>
+      <h3>Behavior-Tested</h3>
+      <p>Trigger probes, membership inference, bias benchmarks, capability claim verification.</p>
+      <span class="tier-cost">Included</span>
+    </div>
+    <div class="col">
+      <div class="col-num">L3</div>
+      <h3>Provenance-Attested</h3>
+      <p>Spectral lineage diff vs base + creator-cooperative training-data attestation.</p>
+      <span class="tier-cost">Enterprise SLA</span>
+    </div>
+    <div class="col">
+      <div class="col-num">L4</div>
+      <h3>Periodica Certified</h3>
+      <p>Manual third-party audit by partner firm (Trail of Bits, NCC Group, AI safety labs).</p>
+      <span class="tier-cost">Scale / Plus</span>
+    </div>
+  </div>
+
+  <p class="micro mt-md"><em>"Your regulator already requires documented model provenance. We're the document."</em> Audits attach to enterprise contracts as a built-in deliverable.</p>
+</section>
+
+<!-- 11. ENTERPRISE TIERS -->
+<section class="slide dense">
+  <div class="label">12 · ENTERPRISE_TIERS</div>
+  <h2>Standardized integration paths.</h2>
+  <p>Our platform scales with your deployment size. Dedicated SLA tiers ensure uptime for mission-critical fleets.</p>
+
+  <div class="tracks-grid">
+    <article class="track-card optional">
+      <div class="track-num">Starter</div>
+      <div class="track-name">Rapid Prototyping</div>
+      <div class="track-row" style="margin-top: 0.5rem;">
+        <span class="val">Ideal for proof-of-concept deployments and small-scale fleet testing.</span>
+      </div>
+      <div class="track-row" style="margin-top: auto;">
+        <span class="val"><strong>SLA Target:</strong> 99.5%</span>
+        <span class="val"><strong>Deployment:</strong> Hosted by Periodica</span>
+      </div>
+    </article>
+
+    <article class="track-card primary">
+      <div class="track-num">Growth</div>
+      <div class="track-name">Production Launch</div>
+      <div class="track-row" style="margin-top: 0.5rem;">
+        <span class="val">For early-scale fleets requiring full watermarking forensics and exportable audit logs.</span>
+      </div>
+      <div class="track-row" style="margin-top: auto;">
+        <span class="val"><strong>SLA Target:</strong> 99.5%</span>
+        <span class="val"><strong>Deployment:</strong> Optional BYOK & On-Prem</span>
+      </div>
+    </article>
+
+    <article class="track-card concurrent">
+      <div class="track-num">Scale & Plus</div>
+      <div class="track-name">Enterprise Fleet</div>
+      <div class="track-row" style="margin-top: 0.5rem;">
+        <span class="val">Air-gapped deployment, multi-region federated routing, and named CSM support.</span>
+      </div>
+      <div class="track-row" style="margin-top: auto;">
+        <span class="val"><strong>SLA Target:</strong> up to 99.99%</span>
+        <span class="val"><strong>Deployment:</strong> Included BYOK & On-Prem</span>
+      </div>
+    </article>
+  </div>
+</section>
+
+
+
+<!-- 13. LANDSCAPE — five threat-model silos -->
+<section class="slide dense">
+  <div class="label">14 · LANDSCAPE / FIVE_SILOS</div>
+  <h2>The market splits cleanly into five threat-model silos.</h2>
+  <p>Periodica is alone in silo five. Each row is real, shipping, well-funded — solving a different problem.</p>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead>
+      <tr>
+        <th>Silo · threat addressed</th>
+        <th>Solved by (named players)</th>
+        <th>Compress</th>
+        <th>Wmrk</th>
+        <th>HW root</th>
+        <th>Cross-vendor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1 · Cloud insider</strong> (host, hypervisor, operator)</td>
+        <td>Anjuna · Fortanix Armet AI · Phala · Opaque · AWS Nitro · Azure Confidential AI · GCP Confidential Space · NVIDIA H100/H200 CC</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="check">TEE</td>
+        <td class="x">cloud only</td>
+      </tr>
+      <tr>
+        <td><strong>2 · Adversarial inputs</strong> (prompt injection, jailbreaks)</td>
+        <td>Lakera (→ Check Point $300M) · Arthur · Lasso · F5 (← CalypsoAI $180M) · Cisco AI Defense (← Robust Intelligence $400M)</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="partial">runtime</td>
+      </tr>
+      <tr>
+        <td><strong>3 · Supply-chain integrity</strong> (scans, AIBOM, lineage)</td>
+        <td>HiddenLayer AISec 2.0 · Cranium · Palo Alto Prisma AIRS (← Protect AI ~$700M)</td>
+        <td class="x">—</td>
+        <td class="partial">metadata</td>
+        <td class="x">—</td>
+        <td class="check">cross-platform scans</td>
+      </tr>
+      <tr>
+        <td><strong>4 · Output authenticity</strong> ("was this AI-generated?")</td>
+        <td>Google SynthID · Meta Stable Signature / Watermark Anything / Video Seal · OpenAI text-watermark · C2PA Content Credentials (Pixel 10, Galaxy S25, Sony, Nikon, Canon)</td>
+        <td class="x">—</td>
+        <td class="check">output</td>
+        <td class="x">—</td>
+        <td class="check">content layer</td>
+      </tr>
+      <tr>
+        <td><strong>vendor-locked DRM</strong> (Apple, NVIDIA, Android, Qualcomm, ARM)</td>
+        <td>Apple Core ML <code>--encrypt</code> · NVIDIA NIM ($4,500/GPU/yr AI Enterprise) · TensorRT plan files · Android Keystore + StrongBox · OpenVINO (none — vendor admits gap)</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="check">silicon-bound</td>
+        <td class="x">single vendor</td>
+      </tr>
+      <tr style="border-top: 2px solid var(--accent); background: rgba(120, 196, 164, 0.05);">
+        <td><strong style="color: var(--accent);">5 · On-device cross-vendor model exfiltration</strong> (Periodica's lane)</td>
+        <td><strong style="color: var(--accent);">Periodica / djinny</strong> — only integrated stack</td>
+        <td class="check">~2× vs bf16</td>
+        <td class="check">64-bit forensic</td>
+        <td class="check">software (TEE roadmap)</td>
+        <td class="check">cross-vendor</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+
+</section>
+
+<!-- 14. VENDORS ADMIT THE GAP — direct quotes from NVIDIA + Intel docs -->
+<section class="slide dense">
+  <div class="label">15 · COMPETITORS_ADMIT / VERBATIM</div>
+  <h2>The two vendors closest to our lane publicly punt the problem.</h2>
+  <p>Verbatim from their own product documentation in 2025–2026. Not interpreted, not paraphrased.</p>
+
+  <div class="phase-card" style="margin-top: 1.5rem;">
+    <div class="track-num" style="color: var(--accent);">NVIDIA · TensorRT-RTX cybersecurity disclosures</div>
+    <p style="color: var(--fg); font-size: clamp(1.05rem, 1.5vw, 1.25rem); line-height: 1.55; font-style: italic; margin-top: 0.6rem;">"Even if the original model specification has been encrypted, the engine plan can be reverse-engineered. Developers are responsible for safeguarding integrity using a digital signature scheme."</p>
+    <p class="micro mt-sm">— <code>docs.nvidia.com/deeplearning/tensorrt-rtx/latest/reference/cybersecurity-disclosures.html</code></p>
+  </div>
+
+  <div class="phase-card" style="margin-top: 1rem;">
+    <div class="track-num" style="color: var(--accent);">Intel · OpenVINO security documentation</div>
+    <p style="color: var(--fg); font-size: clamp(1.05rem, 1.5vw, 1.25rem); line-height: 1.55; font-style: italic; margin-top: 0.6rem;">"Model encryption, decryption and authentication are not provided by OpenVINO." [recommends users implement via OpenSSL]</p>
+    <p class="micro mt-sm">— <code>docs.openvino.ai/2025/documentation/openvino-security.html</code></p>
+  </div>
+
+  <p class="mt-lg" style="color: var(--fg);">Apple covers Apple. NVIDIA punts model-file DRM to ISVs in their own docs. Intel admits OpenVINO doesn't ship encryption. Android, Qualcomm, ARM have execution sandboxes but no shipping product. <strong>Cross-vendor on-device DRM is empty space, and the silicon vendors are publicly saying so.</strong></p>
+</section>
+
+
+
+<!-- 16. LANDSCAPE COMPARISON — Periodica vs alternatives, in one table -->
+<section class="slide dense">
+  <div class="label">17 · LANDSCAPE / COMPARISON</div>
+  <h2>Periodica is the only row with all five capabilities.</h2>
+  <p>Every existing tool covers one or two columns. None integrates compression + at-rest encryption + per-license watermarking + cross-vendor decoding into a single shipping artifact.</p>
+
+  <div class="table-wrap">
+  <table class="compact">
+    <thead>
+      <tr>
+        <th>Approach</th>
+        <th>bf16 ratio</th>
+        <th>Reconstr. error</th>
+        <th>Encrypted</th>
+        <th>Per-license watermark</th>
+        <th>Cross-vendor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background: rgba(120, 196, 164, 0.06);">
+        <td><strong style="color: var(--accent);">Periodica / djinny</strong></td>
+        <td class="check">~2× vs bf16</td>
+        <td class="check">2.9 × 10⁻⁴ (below grid)</td>
+        <td class="check">AES-256-GCM</td>
+        <td class="check">64-bit forensic</td>
+        <td class="check">yes (drop-in SDK)</td>
+      </tr>
+      <tr>
+        <td><strong>DFloat11</strong> (Carlini)</td>
+        <td class="partial">1.43× (ceiling)</td>
+        <td class="check">0 (bit-exact)</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="check">yes</td>
+      </tr>
+      <tr>
+        <td><strong>ZipNN</strong></td>
+        <td class="partial">1.49× (ceiling)</td>
+        <td class="check">0 (bit-exact)</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="check">yes</td>
+      </tr>
+      <tr>
+        <td><strong>GGUF / GPTQ / AWQ</strong> (quant)</td>
+        <td class="partial">1.5–2× (changes inference dtype)</td>
+        <td class="partial">varies — affects logits</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="check">yes</td>
+      </tr>
+      <tr>
+        <td><strong>Plain AES-encrypted .safetensors</strong></td>
+        <td class="x">1.0× (no compression)</td>
+        <td class="check">0</td>
+        <td class="check">yes</td>
+        <td class="x">—</td>
+        <td class="check">yes</td>
+      </tr>
+      <tr>
+        <td><strong>HuggingFace native</strong></td>
+        <td class="x">1.0×</td>
+        <td class="check">0</td>
+        <td class="x">—</td>
+        <td class="x">—</td>
+        <td class="check">yes</td>
+      </tr>
+      <tr>
+        <td><strong>Apple Core ML</strong> <code>--encrypt</code></td>
+        <td class="partial">varies</td>
+        <td class="partial">varies</td>
+        <td class="check">yes</td>
+        <td class="x">—</td>
+        <td class="x">Apple only</td>
+      </tr>
+      <tr>
+        <td><strong>NVIDIA NIM</strong> ($4.5k/GPU/yr)</td>
+        <td class="partial">varies</td>
+        <td class="partial">varies</td>
+        <td class="check">yes</td>
+        <td class="x">—</td>
+        <td class="x">NVIDIA H100/H200 only</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="micro mt-md">Lossless tools (DFloat11, ZipNN) cap at the ~1.5× information-theoretic ceiling and ship no DRM. Quantization changes the inference dtype, so it isn't a drop-in for production-grade serving where logits must match the source. Single-vendor DRM (Apple, NVIDIA) works only on that vendor's silicon. The integrated row — compression + DRM + watermark + cross-vendor — is empty until Periodica fills it.</p>
+</section>
+
+<!-- 17. TRACTION — validation checklist -->
+<section class="slide dense">
+  <div class="label">18 · TRACTION / SHIPPED</div>
+  <span class="cont-marker">Continued from previous slide</span>
+  <h2>8 B params on HuggingFace, decrypts in 0.15 s warm. Already runs.</h2>
+
+  <div class="checklist">
+    <details class="chk-item">
+      <summary>
+        <span class="chk-icon">✓</span>
+        <span><strong>End-to-end round-trip on Gemma 4 E4B (8.6 B params, multimodal).</strong> Forward pass returns correct-shape logits.</span>
+      </summary>
+      <div class="more">Text + vision + audio towers encoded, decoded. Reconstruction error 0.000286 — below bf16 grid spacing.</div>
+    </details>
+    <details class="chk-item">
+      <summary>
+        <span class="chk-icon">✓</span>
+        <span><strong>Encode peak working set ~17 GB on a 16 GB-class model.</strong> Streaming encoder, one tensor group at a time.</span>
+      </summary>
+      <div class="more">Plain AES on the same model would need ≥32 GB resident (raw state-dict + ciphertext + decrypted bytes) — extrapolated from measured AES throughput; v1 benchmark OOM'd on a 48 GB laptop. djinny's streaming path completes where the naive path doesn't.</div>
+    </details>
+    <details class="chk-item">
+      <summary>
+        <span class="chk-icon">✓</span>
+        <span><strong>Decoder + format spec are proprietary; source under NDA.</strong> Customers under contract get full audit access; the format stays under single-vendor control.</span>
+      </summary>
+      <div class="more">Customers run their own audits on the source we share under NDA. The format specification is also confidential, distributed only under license — no third-party decoders are authorized. This closes the fork-and-compete loophole while preserving auditability for paying customers.</div>
+    </details>
+    <details class="chk-item">
+      <summary>
+        <span class="chk-icon">✓</span>
+        <span><strong>3 patents drafted.</strong> Compression, DRM split format, lazy inference.</span>
+      </summary>
+      <div class="more">Filing before any external publication.</div>
+    </details>
+    <details class="chk-item">
+      <summary>
+        <span class="chk-icon">✓</span>
+        <span><strong>Validated round-trip on GPT-2, TinyLlama-1.1B, Gemma 3 1B, Gemma 4 E4B.</strong></span>
+      </summary>
+      <div class="more">Forward-pass equivalence preserved across the four model families.</div>
+    </details>
+  </div>
+</section>
+
+<!-- 18. ROADMAP / TIMELINE -->
+<section class="slide">
+  <div class="label">19 · ROADMAP</div>
+  <h2>What we ship, in order.</h2>
+  <div class="timeline">
+    <div class="tl-cell">
+      <div class="when">Month 0–2</div>
+      <div class="what">Customer discovery</div>
+      <div class="arr">30 interviews</div>
+    </div>
+    <div class="tl-cell">
+      <div class="when">Month 2–6</div>
+      <div class="what">Marketplace + L1 audit live</div>
+      <div class="arr">50+ models in catalog</div>
+    </div>
+    <div class="tl-cell">
+      <div class="when">Month 6–12</div>
+      <div class="what">L2 audits, enterprise primitives, first paid pilot</div>
+      <div class="arr">first paying customers</div>
+    </div>
+    <div class="tl-cell">
+      <div class="when">Month 12–18</div>
+      <div class="what">Lighthouse Profile-C deals close</div>
+      <div class="arr">2 enterprise contracts</div>
+    </div>
+    <div class="tl-cell">
+      <div class="when">Month 18–36</div>
+      <div class="what">Enterprise scale, blueprints v4, optional first-party</div>
+      <div class="arr">marketplace + enterprise compounding</div>
+    </div>
+  </div>
+  <p style="margin-top: 1.5rem;">The marketplace ships first because auto OEMs and medical-device makers don't open procurement conversations with vendors who have nothing visible. Each phase has a measurable trigger to advance.</p>
+</section>
+
+<!-- 19. TEAM -->
+<section class="slide">
+  <div class="label">20 · TEAM</div>
+  <h2>Three founders. Each one covers a specific risk.</h2>
+  <div class="cols">
+    <div class="col">
+      <div class="col-num">CEO</div>
+      <h3>Taha Bouhsine</h3>
+      <p style="color: var(--fg);">Mathematician · Google Developer Expert · architect of the Physics-Grounded AI framework</p>
+      <p>Built djinny end-to-end — compression + DRM + 3 patents drafted. NeurIPS 2026 submission underway.</p>
+      <p class="micro mt-sm" style="color: var(--accent);">Covers: technical risk.</p>
+    </div>
+    <div class="col">
+      <div class="col-num">CTO</div>
+      <h3>Douglas Seo</h3>
+      <p style="color: var(--fg);">Third-time founder · UC Berkeley EECS</p>
+      <p>Lead engineer at Azetta. Previously CEO of Popper (Founders Inc.); CTO at Werkflow ($1.5M VC-backed).</p>
+      <p class="micro mt-sm" style="color: var(--accent);">Covers: execution + scaling risk.</p>
+    </div>
+    <div class="col">
+      <div class="col-num">CPO</div>
+      <h3>Jose Miguel L.</h3>
+      <p style="color: var(--fg);">Former Apple AI/ML PM · Columbia MBA + MS in AI/ML · Schwarzman Scholar · ICML co-author</p>
+      <p>Founding-team member at a YC-backed startup. Apple Engineering Product Manager on AI/ML before that.</p>
+      <p class="micro mt-sm" style="color: var(--accent);">Covers: enterprise + product risk.</p>
+    </div>
+  </div>
+  <p class="micro" style="margin-top: 1.5rem;">
+    Hiring plan: <strong>+1 enterprise sales lead by month 6 (Track A is
+    sales-cycle-bound)</strong>; +1 backend engineer (license server + attestation
+    hooks); +1 frontend / SDK engineer. Year 2: +1 audit/security engineer,
+    +1 CSM, +1 second sales hire. End of Year 1 ~7 people; end of Year 2 ~12.
+  </p>
+</section>
+
+<!-- NEXT STEPS -->
+<section class="slide dense">
+  <div class="label">NEXT_STEPS / PILOT</div>
+  <h2>90-Day Integration Pilot.</h2>
+  <p>We run paid 90-day integration pilots ($25k) that deliver a production-ready drop-in SDK and a fully documented Audit Pipeline.</p>
+
+  <div class="cols phases" style="margin-top: 1.2rem;">
+    <div class="col">
+      <div class="col-num">MONTH 1</div>
+      <h3>Architecture</h3>
+      <p>Identify target hardware (e.g., QNX, Android Auto). Map hardware root-of-trust (TEE, Keystore) to Periodica license bindings.</p>
+    </div>
+    <div class="col">
+      <div class="col-num">MONTH 2</div>
+      <h3>Integration</h3>
+      <p>Drop-in C++ SDK integration into your edge-fleet OS. Compile Periodica decoder for target silicon (ARM, x86).</p>
+    </div>
+    <div class="col">
+      <div class="col-num">MONTH 3</div>
+      <h3>Audit & Sign-off</h3>
+      <p>Deploy custom test models to fleet devices. Generate full L3 Audit Pipeline documentation (WP.29 / FDA compliance mapping).</p>
+    </div>
+  </div>
+
+  <p class="micro mt-md">At the end of the 90 days, the pilot fee is fully credited toward your Year 1 enterprise subscription.</p>
+</section>
+
+<!-- 21. VISION -->
+<section class="slide signoff">
+  <div>
+    <div class="signoff-logo">Periodica</div>
+    <h2 class="signoff-line">Cross-vendor on-device DRM for AI models.</h2>
+    <p class="signoff-tagline">
+      The marketplace ships first. The catalog earns the credibility that
+      closes the enterprise deals. Same encoder, same license server, same
+      audit pipeline underneath.
+    </p>
+    <div class="signoff-meta">
+      <a href="mailto:taha@azetta.ai">taha@azetta.ai</a>
+      <span>·</span>
+      <a href="https://azetta.ai/periodica">azetta.ai/periodica</a>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<!-- APPENDIX / TECHNICAL_BENCHMARKS -->
+<section class="slide dense">
+  <div class="label">APPENDIX / TECHNICAL_BENCHMARKS</div>
+  <h2>What's shipped, with numbers.</h2>
+  <p>Each row is a capability that ships in the encoder/decoder today, validated end-to-end on Gemma 4 E4B (8 B params, multimodal).</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>Mechanism</th>
+        <th>Measured</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Compression & Decode</strong></td>
+        <td>Spatial correlation encode + Lazy Decode (intercepts model loading to prevent edge OOM crashes)</td>
+        <td><strong>~2× vs bf16</strong> source</td>
+      </tr>
+      <tr>
+        <td><strong>Encryption</strong></td>
+        <td>AES-256-GCM (PBKDF2); sidecar holds dequant params</td>
+        <td>Bulk shards mathematically inert without sidecar + key</td>
+      </tr>
+      <tr>
+        <td><strong>Per-license watermark</strong></td>
+        <td>64-bit forensic seed embedded in band normalization</td>
+        <td>Forensic attribution per device · uncontested commercially</td>
+      </tr>
+      <tr>
+        <td><strong>Split-format DRM</strong></td>
+        <td><code>.lamp</code> shards on CDN; <code>.rub</code> + key behind auth</td>
+        <td>Live: <code>huggingface.co/azettaai/gemma-4-E4B-it</code> (7.32 GB public, useless without local key)</td>
+      </tr>
+      <tr>
+        <td><strong>Lazy inference</strong></td>
+        <td><code>LazyCompressedLinear</code> wraps every <code>nn.Linear</code> / <code>nn.Embedding</code></td>
+        <td><strong>2.2 s</strong> to forward-ready model · <strong>0.15 s</strong> warm forward</td>
+      </tr>
+      <tr>
+        <td><strong>Reconstruction</strong></td>
+        <td>Below-grid-floor MAE on bf16 sources; fp32 round-trip preserves dtype</td>
+        <td><strong>0.000286</strong> MAE · logits shape preserved</td>
+      </tr>
+      <tr>
+        <td><strong>OTA delivery</strong></td>
+        <td>2× fewer bytes on the wire at fleet scale</td>
+        <td><strong>5:20</strong> djinny pull vs <strong>10:47</strong> native safetensors (same connection)</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="micro mt-md">Three patents drafted (compression, split-format DRM, lazy inference). Decoder source + format spec proprietary, available under NDA. Format spec confidential — third-party decoders not authorized.</p>
+</section>
+
+
+
+<div class="progress" aria-hidden="true"><i id="progress-bar" style="width: 5.88235%;"></i></div>
+<div class="hint">
+  <kbd>←</kbd><kbd>→</kbd> navigate · <kbd>1</kbd>–<kbd>9</kbd> jump · <kbd>P</kbd> print
+</div>
+<div class="nav">
+  <button id="prev" aria-label="Previous slide">←</button>
+  <span class="counter" id="counter">01 / 17</span>
+  <button id="next" aria-label="Next slide">→</button>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const counter = document.getElementById('counter');
+  const bar = document.getElementById('progress-bar');
+  let i = 0;
+
+  function show(n) {
+    slides.forEach((s, k) => s.classList.toggle('active', k === n));
+    counter.textContent = `${String(n + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+    if (bar) bar.style.width = `${((n + 1) / slides.length) * 100}%`;
+    i = n;
+    history.replaceState(null, '', `#${n + 1}`);
+  }
+  function next() { if (i < slides.length - 1) show(i + 1); }
+  function prev() { if (i > 0) show(i - 1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  // Digit-key slide jump — supports both single (1-9) and double-digit (10-17)
+  let jumpBuf = '';
+  let jumpTimer = null;
+  function flushJump() {
+    if (!jumpBuf) return;
+    const n = parseInt(jumpBuf, 10);
+    if (n >= 1 && n <= slides.length) show(n - 1);
+    jumpBuf = '';
+    jumpTimer = null;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { next(); e.preventDefault(); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { prev(); e.preventDefault(); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'p' || e.key === 'P') window.print();
+    else if (/^[0-9]$/.test(e.key)) {
+      jumpBuf += e.key;
+      clearTimeout(jumpTimer);
+      // Fast-path: if buffer already maps unambiguously beyond max, jump now
+      const peek = parseInt(jumpBuf + '0', 10);
+      if (peek > slides.length) flushJump();
+      else jumpTimer = setTimeout(flushJump, 600);
+    }
+    else if (e.key === 'Enter') flushJump();
+    else if (e.key === 'Escape') { jumpBuf = ''; clearTimeout(jumpTimer); }
+  });
+  document.addEventListener('click', e => {
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.table-wrap')) return;
+    next();
+  });
+
+  // Mobile Swipe Gestures
+  let touchStartX = 0;
+  let touchEndX = 0;
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, {passive: true});
+  document.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    if (touchEndX < touchStartX - 50) next();
+    if (touchEndX > touchStartX + 50) prev();
+  }, {passive: true});
+
+  // Boot from URL hash
+  const h = parseInt(location.hash.slice(1));
+  if (h && h >= 1 && h <= slides.length) show(h - 1);
+  else show(0);
+})();
+</script>
+
+
+</body></html>
