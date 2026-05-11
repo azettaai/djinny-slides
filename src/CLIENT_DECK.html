@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Periodica — Enterprise Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,6 +89,8 @@
     flex-direction: column;
     justify-content: flex-start;     /* default: top-aligned, headers anchor consistently */
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* momentum scroll on iOS Safari */
+    overscroll-behavior-y: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--line-strong) transparent;
   }
@@ -190,6 +192,9 @@
     border-radius: 999px; cursor: pointer;
     font-family: inherit; font-size: 0.85rem; font-weight: 500;
     transition: color 0.18s var(--ease), background 0.18s var(--ease);
+    touch-action: manipulation; /* eliminates 300ms tap delay on iOS */
+    min-height: 44px; /* Apple HIG minimum touch target */
+    -webkit-tap-highlight-color: transparent;
   }
   .nav button:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
   .nav button:active { transform: translateY(1px); }
@@ -1088,12 +1093,34 @@
     }
     .flow-arrow { transform: rotate(90deg); padding: 0.3rem 0; }
     .element { aspect-ratio: auto; }
-    .slide { padding: 2rem 1.25rem; }
-    .nav { bottom: 1rem; right: 1rem; }
+    .slide {
+      padding-top: calc(1.1rem + env(safe-area-inset-top, 0px));
+      padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+      padding-bottom: calc(5.8rem + env(safe-area-inset-bottom, 0px));
+      padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+    }
+    .slide.cover, .slide.signoff {
+      justify-content: flex-start;
+    }
+    .nav {
+      bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px));
+      right: calc(0.65rem + env(safe-area-inset-right, 0px));
+      left: calc(0.65rem + env(safe-area-inset-left, 0px));
+      justify-content: center;
+    }
     .nav button { padding: 0.8rem 1.2rem; } /* larger touch targets */
     .hint { display: none; }
     table { font-size: 0.85rem; }
     th, td { padding: 0.5rem 0.6rem; }
+    html, body {
+      overflow: auto;
+      overscroll-behavior-y: contain;
+      -webkit-text-size-adjust: 100%;
+    }
+    .deck {
+      height: 100dvh;
+      min-height: 100dvh;
+    }
   }
 
   /* Keyboard focus — visible ring without disrupting hover */
@@ -1125,7 +1152,7 @@
     gap: 1.5rem; padding: 2rem; text-align: center;
   }
   @media (orientation: portrait) and (max-width: 768px) {
-    .rotate-hint { display: flex; }
+    .rotate-hint { display: none; }
   }
   .rotate-hint__phone {
     width: 52px; height: 52px;
@@ -1921,20 +1948,30 @@
     else if (e.key === 'Escape') { jumpBuf = ''; clearTimeout(jumpTimer); }
   });
   document.addEventListener('click', e => {
-    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.table-wrap')) return;
+    const isCoarsePointerInput = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    if (isCoarsePointerInput) return;
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.table-wrap') || e.target.closest('summary')) return;
     next();
   });
 
   // Mobile Swipe Gestures
   let touchStartX = 0;
+  let touchStartY = 0;
   let touchEndX = 0;
+  let touchEndY = 0;
   document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
   }, {passive: true});
   document.addEventListener('touchend', e => {
     touchEndX = e.changedTouches[0].screenX;
-    if (touchEndX < touchStartX - 50) next();
-    if (touchEndX > touchStartX + 50) prev();
+    touchEndY = e.changedTouches[0].screenY;
+    const touchDeltaX = touchEndX - touchStartX;
+    const touchDeltaY = touchEndY - touchStartY;
+    const isIntentionalHorizontalSwipe = Math.abs(touchDeltaX) > 50 && Math.abs(touchDeltaX) > Math.abs(touchDeltaY) * 1.35;
+    if (!isIntentionalHorizontalSwipe) return;
+    if (touchDeltaX < 0) next();
+    if (touchDeltaX > 0) prev();
   }, {passive: true});
 
   // Boot from URL hash
