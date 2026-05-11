@@ -180,9 +180,15 @@
       },
     };
 
+    const ERROR_MESSAGES = {
+      'wrong-key': 'Invalid access key — please try again.',
+      'network':   'Could not load encrypted deck. Check your connection and try again.',
+      'timeout':   'Request timed out. Check your connection and try again.',
+    };
+
     function PasswordGate({ deckLabel, encFile }) {
       const [pw,    setPw]    = useState('');
-      const [phase, setPhase] = useState('idle'); // idle | busy | err
+      const [phase, setPhase] = useState('idle'); // idle | busy | wrong-key | network | timeout
       const inputRef = useRef(null);
 
       useEffect(() => { inputRef.current?.focus(); }, []);
@@ -190,22 +196,36 @@
       async function unlock() {
         if (!pw || phase === 'busy') return;
         setPhase('busy');
+
+        // Step 1 — fetch encrypted blob (network errors reported separately)
+        let enc;
         try {
-          const res = await fetch(encFile);
-          if (!res.ok) throw new Error(`fetch ${res.status}`);
-          const enc  = await res.json();
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 12000);
+          const res = await fetch(encFile, { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) throw Object.assign(new Error('network'), { kind: 'network' });
+          enc = await res.json();
+        } catch (e) {
+          setPhase(e.name === 'AbortError' ? 'timeout' : 'network');
+          setTimeout(() => setPhase('idle'), 4000);
+          return;
+        }
+
+        // Step 2 — decrypt (failure means wrong password)
+        try {
           const html = await decryptDeck(enc, pw);
           document.open();
           document.write(html);
           document.close();
         } catch {
-          setPhase('err');
-          setTimeout(() => { setPhase('idle'); }, 2500);
+          setPhase('wrong-key');
+          setTimeout(() => setPhase('idle'), 3000);
         }
       }
 
       const isBusy    = phase === 'busy';
-      const isErr     = phase === 'err';
+      const isErr     = phase !== 'idle' && phase !== 'busy';
       const canSubmit = pw.length > 0 && !isBusy;
 
       return (
@@ -234,7 +254,9 @@
               }}
             />
 
-            {isErr && <p style={css.err}>Invalid access key — please try again.</p>}
+            {isErr && (
+              <p style={css.err}>{ERROR_MESSAGES[phase] ?? 'Something went wrong — please try again.'}</p>
+            )}
 
             <button
               onClick={unlock}

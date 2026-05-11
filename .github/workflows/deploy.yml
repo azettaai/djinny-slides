@@ -25,15 +25,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Re-encrypt if the DECKPASSWORD secret is configured.
-      # If not set, the committed docs/encrypted/ blobs are used as-is.
-      - name: Re-encrypt slides
-        if: ${{ secrets.DECKPASSWORD != '' }}
+      - name: Encrypt slides
         env:
           DECKPASSWORD: ${{ secrets.DECKPASSWORD }}
         run: |
-          pip install cryptography
-          python3 encrypt.py
+          if [ -n "$DECKPASSWORD" ]; then
+            echo "DECKPASSWORD secret found — re-encrypting slides."
+            pip install -r requirements.txt --quiet
+            python3 encrypt.py
+          else
+            echo "DECKPASSWORD not configured — using committed docs/encrypted/ blobs."
+            if [ ! -f docs/encrypted/client.enc.json ] || [ ! -f docs/encrypted/pitch.enc.json ]; then
+              echo "::error::docs/encrypted/ blobs are missing and DECKPASSWORD secret is not set."
+              echo "::error::Either set the DECKPASSWORD repository secret or commit pre-generated blobs."
+              exit 1
+            fi
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

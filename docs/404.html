@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Periodica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: #070a08;
+      color: #d4ddd6;
+      font-family: "IBM Plex Mono", "Courier New", monospace;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      background-image: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(120,196,164,0.05) 0%, transparent 70%);
+    }
+    .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      text-align: center;
+      max-width: 380px;
+    }
+    .code {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: clamp(4rem, 15vw, 7rem);
+      font-weight: 700;
+      color: #78c4a4;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      opacity: 0.25;
+    }
+    .eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: #78c4a4;
+      text-transform: uppercase;
+      margin-top: -0.5rem;
+    }
+    h1 {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #d4ddd6;
+    }
+    p {
+      font-size: 0.8rem;
+      color: #8a9e8e;
+      line-height: 1.7;
+    }
+    .divider {
+      width: 100%;
+      border-top: 1px solid rgba(120,196,164,0.12);
+    }
+    a {
+      font-size: 0.8rem;
+      color: #78c4a4;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+    }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="code">404</div>
+    <span class="eyebrow">Periodica</span>
+    <h1>Page not found</h1>
+    <p>The page you're looking for doesn't exist or has moved.<br>Check the URL and try again.</p>
+    <div class="divider"></div>
+    <a href="./">← back to index</a>
+  </div>
+</body>
+</html>
